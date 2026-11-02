@@ -45,7 +45,7 @@
 - [x] Criar catálogo persistente de frontais e histórico de custos; não apagar automaticamente peças ausentes em uma nova tabela.
 - [x] Calcular preço estimado por código usando `Y = (X × 2) + R$ 30`; o simulador público recebe apenas preço final e dados necessários ao orçamento.
 - [x] Conectar o simulador a frontais aprovados, com seleção de qualidade quando disponível e mensagem de consulta ao WhatsApp quando não houver custo válido.
-- [ ] Revisar e aprovar manualmente a importação real `Tabelatela(2).xlsx`, que contém 623 modelos, 1.253 custos reconhecidos e 57 modelos sem custo.
+- [x] Importar e aprovar `Tabelatela(3).xlsx`, que contém 623 modelos, 1.253 custos reconhecidos e 57 modelos sem custo; os frontais válidos já alimentam o orçamento público.
 - [ ] Tornar multiplicador, mão de obra e arredondamento configuráveis pelo painel antes de importar Baterias e Componentes.
 
 ## Experiência e qualidade
