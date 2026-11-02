@@ -65,3 +65,22 @@ Entregar primeiro a casca visual navegável com hero, perfil, CTA de orçamento,
 - Receber ou cadastrar avaliações reais, notícias, preços, modelos, horários e estoque.
 - Revisar juridicamente o termo de garantia.
 - Integrar/confirmar mapa e eventual API de distância.
+
+
+## Redesign solicitado — Apple Link na Bio
+
+**Mode:** Redesign · Overhaul visual, preservando os contratos funcionais e de conteúdo.
+
+**Preserve:** logo real, WhatsApp, Instagram, Maps, telefone, simulador em etapas, campos e ordem do orçamento, mensagem automática, regras de motoboy, disponibilidade Incell, transparência sobre preços/estoque, acessibilidade básica, responsividade e links configuráveis.
+
+**Improve:** hierarquia de conversão, densidade, legibilidade, tempo até o CTA, uso em uma mão, aparência premium minimalista e navegação em poucos toques.
+
+**Remove:** tela de entrada obrigatória, hero cinematográfico dominante, rolagem longa para acessar as ações principais, neon excessivo, grids de serviços como conteúdo inicial e módulos que competem com o orçamento.
+
+**Protected contracts:** rota `/`, IDs `#orcamento`, `#servicos` e `#confia`, form fields do simulador, envio para WhatsApp, uso da logo fornecida e distinção entre conteúdo confirmado e pendente.
+
+**Design Read + dials:** Link na Bio compacto para 10 cm no celular, com estética Apple-like de produto/serviço: branco suave, grafite, azul iOS como ação, bordas finas, sombras discretas e tipografia de sistema. Variação 3/10, movimento 2/10, densidade 4/10, dependência de asset 7/10, fidelidade de marca 9/10.
+
+**Layout:** coluna central de largura confortável, perfil compacto no topo, um CTA de orçamento dominante, links em lista com ícones, ações secundárias em linha e conteúdo adicional em accordions. O simulador abre em sheet/modal com foco na tarefa, sem navegar para uma página longa.
+
+**Highest-risk change:** reduzir a percepção de “site institucional” sem esconder serviços e confiança. Fallback: manter os accordions e CTAs diretos, com o simulador acessível pelo botão principal e pelo card de inatividade.
