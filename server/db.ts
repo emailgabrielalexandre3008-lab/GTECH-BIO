@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { Feedback, InsertFeedback, feedback, InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -88,4 +88,35 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function listPublishedFeedback() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(feedback).where(eq(feedback.published, 1)).orderBy(desc(feedback.createdAt)).limit(24);
+}
+
+export async function listFeedbackForAdmin() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(feedback).orderBy(desc(feedback.createdAt)).limit(100);
+}
+
+export async function createFeedback(input: Omit<InsertFeedback, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(feedback).values(input);
+  return result[0].insertId;
+}
+
+export async function updateFeedback(id: number, input: Partial<Omit<InsertFeedback, "id" | "createdAt" | "updatedAt">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(feedback).set(input).where(eq(feedback.id, id));
+}
+
+export async function deleteFeedback(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(feedback).where(eq(feedback.id, id));
+}
+
+export type FeedbackRecord = Feedback;

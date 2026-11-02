@@ -17,14 +17,18 @@
 
 ## Persistência e painel administrativo
 
-- [ ] Persistir configuração da loja, links, marcas, modelos, defeitos, preços, regras de garantia, disponibilidade, Incell, motoboy, mensagens, avaliações, notícias, vídeos, documentos e assets no banco gerenciado.
-- [ ] Proteger o painel com autenticação Manus OAuth e autorização por papel de administrador; visitantes não devem acessar dados administrativos.
+- [x] Criar a primeira tabela persistente `feedback` no banco gerenciado, com nome do cliente, nota, comentário, data, fonte, status de publicação e timestamps; não inserir avaliações fictícias.
+- [x] Criar `/admin` protegido por autenticação Manus OAuth e autorização por papel de administrador; visitantes não devem acessar os procedimentos administrativos.
+- [x] Permitir no painel cadastrar, editar, publicar/despublicar e remover avaliações reais, com cálculo da média somente a partir dos registros existentes.
+- [ ] Persistir também configuração da loja, links, marcas, modelos, defeitos, preços, regras de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets no banco gerenciado.
 - [ ] Permitir upload/substituição de documentos e imagens com metadados persistidos e endereços estáveis `/manus-storage/<key>`.
 - [ ] Não simular persistência, analytics, avaliações ou integrações externas; manter pendências explícitas.
 
 ## Conteúdo e confiança
 
-- [ ] Criar espaços para serviços, produtos/acessórios, avaliações reais, notícias, vídeos, grupo VIP, downloads, política de privacidade, termos de uso e termo de garantia.
+- [x] Substituir o atalho principal de serviços por `Avaliações reais no Google`, exibir cinco estrelas como referência visual e apresentar feedbacks públicos somente quando forem cadastrados e publicados pela equipe.
+- [x] Linkar para o Google Maps como fonte de avaliações reais enquanto o painel não tiver registros publicados, deixando claro que o site não inventa comentários ou nota.
+- [ ] Criar espaços para serviços, produtos/acessórios, notícias, vídeos, grupo VIP, downloads, política de privacidade, termos de uso e termo de garantia.
 - [ ] Não inventar avaliações, notícias, datas, preços, links, estoque, horário ou disponibilidade; links de YouTube, catálogo, grupo VIP, áudio direto e domínio permanecem configuráveis/pedentes.
 - [ ] Exibir o orçamento como preliminar e deixar o termo de garantia sujeito à revisão jurídica compatível com o Código de Defesa do Consumidor.
 

@@ -1,12 +1,10 @@
 import {
   ArrowUpRight,
-  BatteryCharging,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   CircleAlert,
   Clock3,
-  Cpu,
   Instagram,
   LocateFixed,
   MapPin,
@@ -24,23 +22,16 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { trpc } from "@/lib/trpc";
 import {
   BRANDS,
   EMPTY_QUOTE,
   GTECH_CONFIG,
   ISSUES,
-  SERVICES,
   buildWhatsAppMessage,
   whatsappWithMessage,
   type QuoteForm,
 } from "@/lib/gtech-config";
-
-function IconForService({ icon }: { icon: string }) {
-  if (icon === "battery") return <BatteryCharging size={18} />;
-  if (icon === "bolt") return <Zap size={18} />;
-  if (icon === "chip") return <Cpu size={18} />;
-  return <Smartphone size={18} />;
-}
 
 function BrandMark() {
   return <img className="bio-mark" src={GTECH_CONFIG.logoUrl} alt="Logo G-Tech" />;
@@ -83,6 +74,9 @@ function QuoteSheet({ onClose }: { onClose: () => void }) {
 function BioContent() {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [showAssist, setShowAssist] = useState(false);
+  const feedbackQuery = trpc.feedback.publicList.useQuery();
+  const feedback = feedbackQuery.data ?? [];
+  const feedbackAverage = feedback.length ? (feedback.reduce((sum, item) => sum + item.rating, 0) / feedback.length).toFixed(1) : null;
 
   useEffect(() => {
     const alreadySeen = sessionStorage.getItem("gtech-inactivity-seen");
@@ -96,11 +90,12 @@ function BioContent() {
 
   return <div className="bio-page"><main className="bio-wrap" id="top">
     <div className="bio-topline"><span>G-TECH / ASSISTÊNCIA TÉCNICA</span><span>SP · 2025</span></div>
-    <section className="bio-profile"><BrandMark /><div className="bio-profile__copy"><h1>G-Tech Assistência Técnica</h1><p>Seu aparelho merece cuidado especializado.</p><div className="bio-location"><MapPin size={13} /> São Paulo · bairro a confirmar</div></div><button className="profile-menu" type="button" aria-label="Mais opções"><span /><span /><span /></button></section>
+    <section className="bio-profile"><a className="profile-menu" href="/admin" aria-label="Abrir painel administrativo"><span /><span /><span /></a><BrandMark /><div className="bio-profile__copy"><h1>G-Tech Assistência Técnica</h1><p>Seu aparelho merece cuidado especializado.</p><div className="bio-location"><MapPin size={13} /> São Paulo · bairro a confirmar</div></div></section>
     <button className="budget-cta" type="button" onClick={() => setQuoteOpen(true)}><span className="budget-cta__icon"><Wrench size={19} /></span><span><strong>Fazer orçamento</strong><small>Envie os detalhes do seu aparelho</small></span><ArrowUpRight size={19} /></button>
     <div className="bio-mini-actions"><a href={GTECH_CONFIG.whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={17} /><span>WhatsApp</span></a><a href={`tel:+${GTECH_CONFIG.whatsapp}`}><Phone size={17} /><span>Ligar</span></a><a href={GTECH_CONFIG.mapsUrl} target="_blank" rel="noreferrer"><MapPin size={17} /><span>Como chegar</span></a></div>
-    <section className="bio-links" aria-label="Opções G-Tech"><QuickLink icon={<Smartphone size={18} />} label="Serviços de assistência técnica" href="#servicos" onClick={() => document.getElementById("servicos")?.setAttribute("open", "true")} /><QuickLink icon={<ShieldCheck size={18} />} label="Garantia e como funciona" href="#confia" onClick={() => document.getElementById("confia")?.setAttribute("open", "true")} /><QuickLink icon={<Instagram size={18} />} label="Acompanhar no Instagram" href={GTECH_CONFIG.instagramUrl} external /><QuickLink icon={<MessageCircle size={18} />} label="Falar com a equipe" href={GTECH_CONFIG.whatsappUrl} external /></section>
-    <details className="bio-details" id="servicos"><summary><span><Wrench size={17} /> Serviços</span><ChevronDown size={17} /></summary><div className="bio-details__body">{SERVICES.map((service) => <div className="compact-service" key={service.code}><span className="compact-service__icon"><IconForService icon={service.icon} /></span><span><strong>{service.title}</strong><small>{service.body}</small></span><a href="#orcamento" onClick={() => setQuoteOpen(true)} aria-label={`Orçar ${service.title}`}><ArrowUpRight size={15} /></a></div>)}</div></details>
+    <a className="ratings-strip" href={GTECH_CONFIG.mapsUrl} target="_blank" rel="noreferrer"><span className="feedback-stars" aria-hidden="true">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={16} fill="currentColor" />)}</span><span><strong>Feedback real de clientes</strong><small>{feedbackAverage ? `${feedbackAverage}/5 · ver avaliações` : "Ver avaliações reais no Google"}</small></span><ArrowUpRight size={16} /></a>
+    <section className="bio-links" aria-label="Opções G-Tech"><QuickLink icon={<ShieldCheck size={18} />} label="Garantia e como funciona" href="#confia" onClick={() => document.getElementById("confia")?.setAttribute("open", "true")} /><QuickLink icon={<Instagram size={18} />} label="Acompanhar no Instagram" href={GTECH_CONFIG.instagramUrl} external /><QuickLink icon={<MessageCircle size={18} />} label="Falar com a equipe" href={GTECH_CONFIG.whatsappUrl} external /></section>
+    <details className="bio-details" id="feedback"><summary><span><Star size={17} /> Feedback de clientes</span><ChevronDown size={17} /></summary><div className="bio-details__body feedback-panel"><div className="feedback-rating"><div className="feedback-stars" aria-label="Cinco estrelas de referência">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={18} fill="currentColor" />)}</div><strong>{feedbackAverage ? `${feedbackAverage}/5` : "Avaliações reais"}</strong><small>{feedback.length ? `${feedback.length} avaliação(ões) publicada(s)` : "Confira os comentários reais no Google"}</small></div>{feedback.length ? <div className="feedback-list">{feedback.map((item) => <article className="feedback-item" key={item.id}><div className="feedback-item__top"><strong>{item.customerName}</strong><span>{Array.from({ length: item.rating }, (_, index) => <Star key={index} size={12} fill="currentColor" />)}</span></div><p>“{item.comment}”</p><small>{item.source}{item.reviewDate ? ` · ${item.reviewDate}` : ""}</small></article>)}</div> : <p className="feedback-empty">Ainda não há comentários cadastrados no painel. Para ver as avaliações reais já existentes, acesse o perfil da G-Tech no Google Maps.</p>}<a className="feedback-google" href={GTECH_CONFIG.mapsUrl} target="_blank" rel="noreferrer">Ver avaliações reais no Google Maps <ArrowUpRight size={15} /></a></div></details>
     <details className="bio-details" id="confia"><summary><span><ShieldCheck size={17} /> Confiança & informações</span><ChevronDown size={17} /></summary><div className="bio-details__body bio-info"><p>Orçamentos digitais são preliminares. O valor definitivo e a disponibilidade da peça são confirmados pela equipe após avaliação técnica.</p><div><CheckLine text="Atendimento direto pelo WhatsApp" /><CheckLine text="Disponibilidade confirmada antes da promessa" /><CheckLine text="Termos e garantia documentados" /></div></div></details>
     <details className="bio-details"><summary><span><Sparkles size={17} /> Mais da G-Tech</span><ChevronDown size={17} /></summary><div className="bio-details__body bio-more"><a href={GTECH_CONFIG.catalogUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.catalogUrl) event.preventDefault(); }}><span>Produtos e acessórios</span><small>{GTECH_CONFIG.catalogUrl ? "Abrir catálogo" : "Link em configuração"}</small><ArrowUpRight size={15} /></a><a href={GTECH_CONFIG.vipGroupUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.vipGroupUrl) event.preventDefault(); }}><span>Grupo VIP de ofertas</span><small>{GTECH_CONFIG.vipGroupUrl ? "Entrar no grupo" : "Link em configuração"}</small><ArrowUpRight size={15} /></a><a href={GTECH_CONFIG.youtubeUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.youtubeUrl) event.preventDefault(); }}><span>Vídeos e dicas</span><small>{GTECH_CONFIG.youtubeUrl ? "Assistir no YouTube" : "Canal em configuração"}</small><ArrowUpRight size={15} /></a></div></details>
     <div className="bio-promo"><img src={GTECH_CONFIG.campaignImageUrl} alt="Campanha G-Tech e Shopee" /><div><small>NA LOJA</small><strong>Recebemos seus pacotes.</strong><span>Confira os detalhes pelo WhatsApp.</span></div><ArrowUpRight size={17} /></div>
