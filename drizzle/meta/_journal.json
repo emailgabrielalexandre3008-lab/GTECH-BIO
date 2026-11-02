@@ -43,6 +43,13 @@
       "when": 1793642171576,
       "tag": "0005_flowery_exodus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1793643381587,
+      "tag": "0006_fair_anita_blake",
+      "breakpoints": true
     }
   ]
 }

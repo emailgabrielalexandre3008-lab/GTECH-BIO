@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { AdminContent, adminContent, AdminSession, adminSessions, AnalyticsEvent, analyticsEvents, Feedback, InsertAdminContent, InsertFeedback, feedback, InsertQuoteRequest, InsertUser, QuoteRequest, quoteRequests, users, PartCatalog, partsCatalog, PartPriceHistory, partPriceHistory, SupplierImport, supplierImports } from "../drizzle/schema";
+import { AdminActionTicket, adminActionTickets, AdminContent, adminContent, AdminSession, adminSessions, AnalyticsEvent, analyticsEvents, Feedback, InsertAdminContent, InsertFeedback, feedback, InsertQuoteRequest, InsertUser, QuoteRequest, quoteRequests, users, PartCatalog, partsCatalog, PartPriceHistory, partPriceHistory, SupplierImport, supplierImports } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -268,3 +268,20 @@ export async function listPartPriceHistory(catalogKey: string) {
 }
 
 export type FeedbackRecord = Feedback;
+
+
+export async function createAdminActionTicket(input: Omit<AdminActionTicket, "id" | "createdAt" | "usedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.insert(adminActionTickets).values(input);
+}
+
+export async function consumeAdminActionTicket(tokenHash: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(adminActionTickets).where(and(eq(adminActionTickets.tokenHash, tokenHash), gt(adminActionTickets.expiresAt, new Date()))).limit(1);
+  const ticket = result[0];
+  if (!ticket || ticket.usedAt) return undefined;
+  await db.update(adminActionTickets).set({ usedAt: new Date() }).where(eq(adminActionTickets.id, ticket.id));
+  return ticket;
+}

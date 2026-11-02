@@ -50,6 +50,17 @@ export const adminSessions = mysqlTable("admin_sessions", {
 
 export type AdminSession = typeof adminSessions.$inferSelect;
 
+export const adminActionTickets = mysqlTable("admin_action_tickets", {
+  id: int("id").autoincrement().primaryKey(),
+  tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(),
+  email: varchar("email", { length: 320 }).notNull(),
+  expiresAt: timestamp("expiresAt").notNull(),
+  usedAt: timestamp("usedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AdminActionTicket = typeof adminActionTickets.$inferSelect;
+
 export const adminContent = mysqlTable("admin_content", {
   id: int("id").autoincrement().primaryKey(),
   kind: varchar("kind", { length: 32 }).notNull(),

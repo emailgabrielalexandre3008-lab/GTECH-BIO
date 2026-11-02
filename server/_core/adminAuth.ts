@@ -63,3 +63,19 @@ export function setAdminSessionCookie(res: Response, token: string, maxAge = ADM
 export function clearAdminSessionCookie(res: Response) {
   res.clearCookie(ADMIN_SESSION_COOKIE, { ...getSessionCookieOptions(), maxAge: -1 });
 }
+
+export async function createAdminActionTicket(email: string) {
+  const token = randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+  await db.createAdminActionTicket({ tokenHash: hashSessionToken(token), email: normalizeEmail(email), expiresAt });
+  return { token, expiresAt };
+}
+
+export async function getAdminIdentityOrActionTicket(req: Request): Promise<AdminIdentity | null> {
+  const identity = await getAdminIdentity(req);
+  if (identity) return identity;
+  const actionToken = req.headers["x-admin-action-ticket"];
+  if (typeof actionToken !== "string" || !actionToken) return null;
+  const ticket = await db.consumeAdminActionTicket(hashSessionToken(actionToken));
+  return ticket ? { email: ticket.email, expiresAt: ticket.expiresAt } : null;
+}
