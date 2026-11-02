@@ -71,8 +71,9 @@ export const appRouter = router({
   parts: router({
     publicFrontals: publicProcedure.input(z.object({ brand: z.string().trim().max(80).optional(), model: z.string().trim().max(160).optional(), quality: z.string().trim().max(120).optional() }).optional()).query(async ({ input }) => {
       const rows = await listPartsCatalog("frontals");
-      const brandRows = rows.filter((item) => !input?.brand || item.brand.toLowerCase() === input.brand.toLowerCase());
-      const modelNeedle = input?.model?.toLowerCase() ?? "";
+      const requestedBrand = input?.brand?.toLowerCase() === "apple" ? "iphone" : input?.brand?.toLowerCase() ?? "";
+      const brandRows = rows.filter((item) => !requestedBrand || item.brand.toLowerCase() === requestedBrand);
+      const modelNeedle = (input?.model?.toLowerCase() ?? "").replace(/^(apple|iphone)\s*/i, "").trim();
       const exactRows = modelNeedle ? brandRows.filter((item) => item.model.toLowerCase() === modelNeedle) : brandRows;
       const matchedRows = exactRows.length ? exactRows : brandRows.filter((item) => !modelNeedle || item.model.toLowerCase().includes(modelNeedle));
       return matchedRows.filter((item) => !input?.quality || (item.quality ?? "").toLowerCase() === input.quality.toLowerCase()).map((item) => ({ id: item.id, brand: item.brand, model: item.model, serviceType: item.serviceType, quality: item.quality, estimatedPrice: Math.round((Number(item.supplierCost) * 2 + 30) * 100) / 100 }));
