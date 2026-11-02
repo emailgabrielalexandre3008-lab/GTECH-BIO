@@ -1,0 +1,1 @@
+ALTER TABLE `supplier_imports` MODIFY COLUMN `previewJson` mediumtext NOT NULL;

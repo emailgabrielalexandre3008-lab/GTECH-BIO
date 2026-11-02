@@ -1,6 +1,6 @@
 import { COOKIE_NAME } from "@shared/const";
 import { z } from "zod";
-import { createContent, createFeedback, createQuoteRequest, deleteContent, deleteFeedback, getContent, listAnalyticsEvents, listContent, listFeedbackForAdmin, listPublishedFeedback, listQuoteRequests, recordAnalyticsEvent, updateContent, updateFeedback, updateQuoteStatus } from "./db";
+import { createContent, createFeedback, createQuoteRequest, deleteContent, deleteFeedback, getContent, listAnalyticsEvents, listContent, listFeedbackForAdmin, listPartsCatalog, listPublishedFeedback, listQuoteRequests, recordAnalyticsEvent, updateContent, updateFeedback, updateQuoteStatus } from "./db";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { adminProcedure, publicProcedure, router } from "./_core/trpc";
@@ -66,6 +66,13 @@ export const appRouter = router({
   analytics: router({
     track: publicProcedure.input(z.object({ eventName: z.string().trim().min(2).max(80), path: z.string().max(255).optional(), referrer: z.string().max(500).optional() })).mutation(({ input }) => recordAnalyticsEvent({ eventName: input.eventName, path: input.path ?? null, referrer: input.referrer ?? null })),
     adminList: adminProcedure.query(() => listAnalyticsEvents()),
+  }),
+
+  parts: router({
+    publicFrontals: publicProcedure.input(z.object({ brand: z.string().trim().max(80).optional(), model: z.string().trim().max(160).optional(), quality: z.string().trim().max(120).optional() }).optional()).query(async ({ input }) => {
+      const rows = await listPartsCatalog("frontals");
+      return rows.filter((item) => (!input?.brand || item.brand.toLowerCase() === input.brand.toLowerCase()) && (!input?.model || item.model.toLowerCase().includes(input.model.toLowerCase())) && (!input?.quality || (item.quality ?? "").toLowerCase() === input.quality.toLowerCase())).map((item) => ({ id: item.id, brand: item.brand, model: item.model, serviceType: item.serviceType, quality: item.quality, estimatedPrice: Math.round((Number(item.supplierCost) * 2 + 30) * 100) / 100 }));
+    }),
   }),
 
   // TODO: add feature routers here, e.g.

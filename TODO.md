@@ -36,6 +36,18 @@
 - [ ] Exibir o orçamento como preliminar e deixar o termo de garantia sujeito à revisão jurídica compatível com o Código de Defesa do Consumidor.
 - [x] Deixar Google Meu Negócio e API Google fora desta etapa, sem inventar nota, avaliações, insights ou sincronização; a integração oficial permanece como fase final dependente de OAuth e acesso às APIs.
 
+## Importador Tyros Cell — Frontais/Telas
+
+- [x] Criar seção administrativa exclusiva para Frontais/Telas, separada de Baterias e Componentes, com upload individual de `.xlsx` e `.xls`.
+- [x] Ler o Excel original recebido, incluindo abas não vazias, seções de marcas, modelos na coluna inicial, células de qualidade/custo e valores numéricos ou no padrão `valor-qualidade`.
+- [x] Gerar prévia persistente antes da aprovação, exibindo arquivo, data, abas, marcas, modelos, custos reconhecidos, linhas inválidas e duplicidades.
+- [x] Armazenar o arquivo original no Storage durável e proteger upload, histórico, prévia, catálogo e custos com sessão administrativa.
+- [x] Criar catálogo persistente de frontais e histórico de custos; não apagar automaticamente peças ausentes em uma nova tabela.
+- [x] Calcular preço estimado por código usando `Y = (X × 2) + R$ 30`; o simulador público recebe apenas preço final e dados necessários ao orçamento.
+- [x] Conectar o simulador a frontais aprovados, com seleção de qualidade quando disponível e mensagem de consulta ao WhatsApp quando não houver custo válido.
+- [ ] Revisar e aprovar manualmente a importação real `Tabelatela(2).xlsx`, que contém 623 modelos, 1.253 custos reconhecidos e 57 modelos sem custo.
+- [ ] Tornar multiplicador, mão de obra e arredondamento configuráveis pelo painel antes de importar Baterias e Componentes.
+
 ## Experiência e qualidade
 
 - [ ] Garantir controles equivalentes para toque, mouse e teclado, áreas de toque confortáveis, foco visível, textos legíveis sem zoom horizontal, conteúdo que não dependa de hover e suporte a `prefers-reduced-motion`.

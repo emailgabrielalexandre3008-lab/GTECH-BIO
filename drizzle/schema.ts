@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, int, mediumtext, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -98,3 +98,61 @@ export const analyticsEvents = mysqlTable("analytics_events", {
 });
 
 export type AnalyticsEvent = typeof analyticsEvents.$inferSelect;
+
+export const supplierImports = mysqlTable("supplier_imports", {
+  id: int("id").autoincrement().primaryKey(),
+  category: varchar("category", { length: 32 }).notNull(),
+  fileName: varchar("fileName", { length: 255 }).notNull(),
+  sourceFileKey: varchar("sourceFileKey", { length: 500 }),
+  status: varchar("status", { length: 32 }).default("preview").notNull(),
+  rowsTotal: int("rowsTotal").default(0).notNull(),
+  validRows: int("validRows").default(0).notNull(),
+  invalidRows: int("invalidRows").default(0).notNull(),
+  duplicateRows: int("duplicateRows").default(0).notNull(),
+  changedRows: int("changedRows").default(0).notNull(),
+  previewJson: mediumtext("previewJson").notNull(),
+  errorMessage: text("errorMessage"),
+  importedBy: varchar("importedBy", { length: 320 }).notNull(),
+  approvedAt: timestamp("approvedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type SupplierImport = typeof supplierImports.$inferSelect;
+export type InsertSupplierImport = typeof supplierImports.$inferInsert;
+
+export const partsCatalog = mysqlTable("parts_catalog", {
+  id: int("id").autoincrement().primaryKey(),
+  brand: varchar("brand", { length: 80 }).notNull(),
+  model: varchar("model", { length: 160 }).notNull(),
+  category: varchar("category", { length: 32 }).notNull(),
+  serviceType: varchar("serviceType", { length: 120 }).notNull(),
+  quality: varchar("quality", { length: 120 }),
+  supplierCost: decimal("supplierCost", { precision: 10, scale: 2 }).notNull(),
+  supplier: varchar("supplier", { length: 120 }).default("Tyros Cell").notNull(),
+  sourceImportId: int("sourceImportId").notNull(),
+  sourceFileName: varchar("sourceFileName", { length: 255 }).notNull(),
+  approvalStatus: varchar("approvalStatus", { length: 32 }).default("approved").notNull(),
+  availabilityStatus: varchar("availabilityStatus", { length: 32 }).default("confirmed").notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PartCatalog = typeof partsCatalog.$inferSelect;
+export type InsertPartCatalog = typeof partsCatalog.$inferInsert;
+
+export const partPriceHistory = mysqlTable("part_price_history", {
+  id: int("id").autoincrement().primaryKey(),
+  catalogKey: varchar("catalogKey", { length: 500 }).notNull(),
+  brand: varchar("brand", { length: 80 }).notNull(),
+  model: varchar("model", { length: 160 }).notNull(),
+  category: varchar("category", { length: 32 }).notNull(),
+  serviceType: varchar("serviceType", { length: 120 }).notNull(),
+  quality: varchar("quality", { length: 120 }),
+  supplierCost: decimal("supplierCost", { precision: 10, scale: 2 }).notNull(),
+  sourceImportId: int("sourceImportId").notNull(),
+  sourceFileName: varchar("sourceFileName", { length: 255 }).notNull(),
+  changedAt: timestamp("changedAt").defaultNow().notNull(),
+});
+
+export type PartPriceHistory = typeof partPriceHistory.$inferSelect;

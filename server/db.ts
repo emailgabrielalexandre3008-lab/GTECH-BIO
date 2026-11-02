@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { AdminContent, adminContent, AdminSession, adminSessions, AnalyticsEvent, analyticsEvents, Feedback, InsertAdminContent, InsertFeedback, feedback, InsertQuoteRequest, InsertUser, QuoteRequest, quoteRequests, users } from "../drizzle/schema";
+import { AdminContent, adminContent, AdminSession, adminSessions, AnalyticsEvent, analyticsEvents, Feedback, InsertAdminContent, InsertFeedback, feedback, InsertQuoteRequest, InsertUser, QuoteRequest, quoteRequests, users, PartCatalog, partsCatalog, PartPriceHistory, partPriceHistory, SupplierImport, supplierImports } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -201,6 +201,70 @@ export async function listAnalyticsEvents() {
   const db = await getDb();
   if (!db) return [] as AnalyticsEvent[];
   return db.select().from(analyticsEvents).orderBy(desc(analyticsEvents.createdAt)).limit(1000);
+}
+
+export async function createSupplierImport(input: Omit<typeof supplierImports.$inferInsert, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(supplierImports).values(input);
+  return Number(result[0].insertId);
+}
+
+export async function listSupplierImports(category = "frontals") {
+  const db = await getDb();
+  if (!db) return [] as SupplierImport[];
+  return db.select().from(supplierImports).where(eq(supplierImports.category, category)).orderBy(desc(supplierImports.createdAt)).limit(100);
+}
+
+export async function getSupplierImport(id: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(supplierImports).where(eq(supplierImports.id, id)).limit(1);
+  return result[0];
+}
+
+export async function approveSupplierImport(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const current = await getSupplierImport(id);
+  if (!current) throw new Error("Importação não encontrada");
+  if (current.status === "approved") return { updated: 0, created: 0, skipped: 0 };
+  const rows = JSON.parse(current.previewJson) as Array<{ brand: string; model: string; category: string; serviceType: string; quality: string | null; supplierCost: number | null; valid: boolean; duplicateKey: string }>;
+  const existing = await db.select().from(partsCatalog).where(eq(partsCatalog.category, current.category)).limit(5000);
+  const byKey = new Map(existing.map((item) => [[item.brand, item.model, item.quality ?? "sem-qualidade"].map((value) => value.toLowerCase().replace(/\s+/g, " ").trim()).join("|"), item]));
+  let updated = 0;
+  let created = 0;
+  let skipped = 0;
+  for (const row of rows) {
+    if (!row.valid || row.supplierCost === null) { skipped += 1; continue; }
+    const key = row.duplicateKey;
+    const currentPart = byKey.get(key);
+    const values = { brand: row.brand, model: row.model, category: row.category, serviceType: row.serviceType, quality: row.quality, supplierCost: row.supplierCost.toFixed(2), supplier: "Tyros Cell", sourceImportId: id, sourceFileName: current.fileName, approvalStatus: "approved", availabilityStatus: "confirmed" } as const;
+    if (currentPart) {
+      if (Number(currentPart.supplierCost) !== row.supplierCost || currentPart.sourceFileName !== current.fileName) {
+        await db.insert(partPriceHistory).values({ catalogKey: key, brand: currentPart.brand, model: currentPart.model, category: currentPart.category, serviceType: currentPart.serviceType, quality: currentPart.quality, supplierCost: currentPart.supplierCost, sourceImportId: currentPart.sourceImportId, sourceFileName: currentPart.sourceFileName });
+        await db.update(partsCatalog).set(values).where(eq(partsCatalog.id, currentPart.id));
+        updated += 1;
+      } else skipped += 1;
+    } else {
+      await db.insert(partsCatalog).values(values);
+      created += 1;
+    }
+  }
+  await db.update(supplierImports).set({ status: "approved", approvedAt: new Date() }).where(eq(supplierImports.id, id));
+  return { updated, created, skipped };
+}
+
+export async function listPartsCatalog(category = "frontals") {
+  const db = await getDb();
+  if (!db) return [] as PartCatalog[];
+  return db.select().from(partsCatalog).where(eq(partsCatalog.category, category)).orderBy(partsCatalog.brand, partsCatalog.model).limit(5000);
+}
+
+export async function listPartPriceHistory(catalogKey: string) {
+  const db = await getDb();
+  if (!db) return [] as PartPriceHistory[];
+  return db.select().from(partPriceHistory).where(eq(partPriceHistory.catalogKey, catalogKey)).orderBy(desc(partPriceHistory.changedAt)).limit(100);
 }
 
 export type FeedbackRecord = Feedback;

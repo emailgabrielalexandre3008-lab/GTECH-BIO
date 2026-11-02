@@ -8,6 +8,9 @@ import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { clearAdminSessionCookie, createAdminLogin, getAdminIdentity, revokeAdminLogin, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
+import { approveSupplierImport, createSupplierImport, getSupplierImport, listPartsCatalog, listSupplierImports } from "../db";
+import { parseFrontalsWorkbook } from "../supplier/frontalsParser";
+import { uploadSupplierFile } from "../supplier/storage";
 
 async function startServer() {
   const app = express();
@@ -43,6 +46,46 @@ async function startServer() {
     await revokeAdminLogin(req);
     clearAdminSessionCookie(res);
     res.json({ authenticated: false });
+  });
+  app.get("/api/admin/supplier/frontals/imports", async (req, res) => {
+    const identity = await getAdminIdentity(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    res.json({ imports: await listSupplierImports("frontals") });
+  });
+  app.get("/api/admin/supplier/frontals/imports/:id", async (req, res) => {
+    const identity = await getAdminIdentity(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    const item = await getSupplierImport(Number(req.params.id));
+    if (!item) { res.status(404).json({ error: "Importação não encontrada." }); return; }
+    res.json({ ...item, preview: JSON.parse(item.previewJson) });
+  });
+  app.post("/api/admin/supplier/frontals/import", express.raw({ type: ["application/octet-stream", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"], limit: "25mb" }), async (req, res) => {
+    const identity = await getAdminIdentity(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    const fileName = String(req.header("x-file-name") || "").trim();
+    const contentType = String(req.header("content-type") || "application/octet-stream").split(";")[0];
+    if (!/\.(xlsx|xls)$/i.test(fileName)) { res.status(400).json({ error: "Envie um arquivo .xlsx ou .xls." }); return; }
+    const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body ?? []);
+    if (!buffer.length) { res.status(400).json({ error: "O arquivo está vazio." }); return; }
+    try {
+      const parsed = parseFrontalsWorkbook(buffer);
+      const sourceFileKey = await uploadSupplierFile(buffer, fileName, contentType);
+      const importId = await createSupplierImport({ category: "frontals", fileName, sourceFileKey, status: "preview", rowsTotal: parsed.rowsTotal, validRows: parsed.validRows, invalidRows: parsed.invalidRows, duplicateRows: parsed.duplicateRows, changedRows: 0, previewJson: JSON.stringify(parsed.rows), importedBy: identity.email });
+      res.json({ importId, fileName, status: "preview", rowsTotal: parsed.rowsTotal, validRows: parsed.validRows, invalidRows: parsed.invalidRows, duplicateRows: parsed.duplicateRows, brands: parsed.brands, models: parsed.models, sheetsRead: parsed.sheetsRead, preview: parsed.rows.slice(0, 200) });
+    } catch (error) {
+      console.error("[SupplierImport] frontals failed:", error instanceof Error ? error.message : "unknown");
+      res.status(422).json({ error: error instanceof Error ? error.message : "Não foi possível interpretar o arquivo." });
+    }
+  });
+  app.post("/api/admin/supplier/frontals/imports/:id/approve", async (req, res) => {
+    const identity = await getAdminIdentity(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    try { res.json(await approveSupplierImport(Number(req.params.id))); } catch (error) { res.status(422).json({ error: error instanceof Error ? error.message : "Não foi possível aprovar a importação." }); }
+  });
+  app.get("/api/admin/supplier/frontals/catalog", async (req, res) => {
+    const identity = await getAdminIdentity(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    res.json({ parts: await listPartsCatalog("frontals") });
   });
   registerOAuthRoutes(app);
   // tRPC API

@@ -29,6 +29,20 @@
       "when": 1793638381933,
       "tag": "0003_jazzy_azazel",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1793642101286,
+      "tag": "0004_fluffy_gunslinger",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1793642171576,
+      "tag": "0005_flowery_exodus",
+      "breakpoints": true
     }
   ]
 }

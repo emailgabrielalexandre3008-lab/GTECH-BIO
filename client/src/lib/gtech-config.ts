@@ -75,6 +75,8 @@ export type QuoteForm = {
   complement: string;
   reference: string;
   intent: "urgency" | "quote";
+  quality: string;
+  estimatedPrice: number | null;
 };
 
 export const EMPTY_QUOTE: QuoteForm = {
@@ -88,6 +90,8 @@ export const EMPTY_QUOTE: QuoteForm = {
   complement: "",
   reference: "",
   intent: "quote",
+  quality: "",
+  estimatedPrice: null,
 };
 
 export function buildWhatsAppMessage(form: QuoteForm) {
@@ -95,7 +99,7 @@ export function buildWhatsAppMessage(form: QuoteForm) {
   const location = form.serviceMode === "store" ? "Loja G-Tech" : form.address || "Endereço a confirmar";
   const intent = form.intent === "urgency" ? "Estou com urgência" : "Estou apenas procurando orçamento";
 
-  return `Olá, G-Tech! Gostaria de solicitar um orçamento.\n\nNome: ${form.name}\nMarca: ${form.brand}\nModelo: ${form.model}\nDefeito: ${form.issue}\nDetalhes: ${form.details || "Não informado"}\nAtendimento: ${atendimento}\nLocalização: ${location}\nIntenção: ${intent}\n\nGostaria de receber uma estimativa preliminar. Sei que o valor definitivo será confirmado após avaliação técnica.`;
+  return `Olá, G-Tech! Gostaria de solicitar um orçamento.\n\nNome: ${form.name}\nMarca: ${form.brand}\nModelo: ${form.model}\nDefeito: ${form.issue}\nQualidade: ${form.quality || "A confirmar"}\nPreço estimado: ${form.estimatedPrice ? `R$ ${form.estimatedPrice.toFixed(2)}` : "Não encontrado; consultar equipe"}\nDetalhes: ${form.details || "Não informado"}\nAtendimento: ${atendimento}\nLocalização: ${location}\nIntenção: ${intent}\n\nGostaria de receber uma estimativa preliminar. Sei que o valor definitivo será confirmado após avaliação técnica.`;
 }
 
 export function whatsappWithMessage(message: string) {
