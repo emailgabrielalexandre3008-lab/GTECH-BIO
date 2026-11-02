@@ -6,7 +6,7 @@ import { trpc } from "@/lib/trpc";
 
 // Admin is deliberately separate from the public Link na Bio. Public visitors never receive these procedures.
 export default function Admin() {
-  const auth = useAuth({ redirectOnUnauthenticated: true, redirectPath: "/admin" });
+  const auth = useAuth({ redirectOnUnauthenticated: true });
   const feedbackQuery = trpc.feedback.adminList.useQuery(undefined, { enabled: Boolean(auth.user?.role === "admin") });
   const createMutation = trpc.feedback.create.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetForm(); } });
   const updateMutation = trpc.feedback.update.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetForm(); } });
