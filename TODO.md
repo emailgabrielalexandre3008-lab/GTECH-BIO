@@ -20,7 +20,10 @@
 - [x] Criar a primeira tabela persistente `feedback` no banco gerenciado, com nome do cliente, nota, comentário, data, fonte, status de publicação e timestamps; não inserir avaliações fictícias.
 - [x] Criar `/admin` protegido por login próprio de e-mail e senha; armazenar a senha apenas como variável protegida, usar sessão aleatória persistida somente como hash, cookie `HttpOnly/Secure/SameSite=None`, expiração de sete dias e logout; visitantes não devem acessar os procedimentos administrativos.
 - [x] Permitir no painel cadastrar, editar, publicar/despublicar e remover avaliações reais, com cálculo da média somente a partir dos registros existentes.
-- [ ] Persistir também configuração da loja, links, marcas, modelos, defeitos, preços, regras de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets no banco gerenciado.
+- [x] Persistir registros de conteúdo administrativo para configurações, seções, links, reparos, promoções e dados estruturados, com cadastro, edição, ativação, ordenação e remoção.
+- [x] Registrar pedidos reais enviados pelo simulador, listar pedidos no painel, alterar status e derivar uma lista de clientes a partir dos pedidos recebidos.
+- [x] Registrar eventos reais de início e envio de orçamento e exibir contagens no Dashboard/Analytics; não exibir números fictícios.
+- [ ] Persistir também preços, regras detalhadas de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets com editores especializados e uploads persistidos.
 - [ ] Permitir upload/substituição de documentos e imagens com metadados persistidos e endereços estáveis `/manus-storage/<key>`.
 - [ ] Não simular persistência, analytics, avaliações ou integrações externas; manter pendências explícitas.
 
@@ -31,6 +34,7 @@
 - [ ] Criar espaços para serviços, produtos/acessórios, notícias, vídeos, grupo VIP, downloads, política de privacidade, termos de uso e termo de garantia.
 - [ ] Não inventar avaliações, notícias, datas, preços, links, estoque, horário ou disponibilidade; links de YouTube, catálogo, grupo VIP, áudio direto e domínio permanecem configuráveis/pedentes.
 - [ ] Exibir o orçamento como preliminar e deixar o termo de garantia sujeito à revisão jurídica compatível com o Código de Defesa do Consumidor.
+- [x] Deixar Google Meu Negócio e API Google fora desta etapa, sem inventar nota, avaliações, insights ou sincronização; a integração oficial permanece como fase final dependente de OAuth e acesso às APIs.
 
 ## Experiência e qualidade
 

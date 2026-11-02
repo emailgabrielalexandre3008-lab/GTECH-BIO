@@ -1,6 +1,6 @@
 import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { AdminSession, adminSessions, Feedback, InsertFeedback, feedback, InsertUser, users } from "../drizzle/schema";
+import { AdminContent, adminContent, AdminSession, adminSessions, AnalyticsEvent, analyticsEvents, Feedback, InsertAdminContent, InsertFeedback, feedback, InsertQuoteRequest, InsertUser, QuoteRequest, quoteRequests, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -137,6 +137,70 @@ export async function deleteAdminSession(tokenHash: string) {
   const db = await getDb();
   if (!db) return;
   await db.delete(adminSessions).where(eq(adminSessions.tokenHash, tokenHash));
+}
+
+export async function listContent(kind?: string) {
+  const db = await getDb();
+  if (!db) return [] as AdminContent[];
+  const query = kind ? db.select().from(adminContent).where(eq(adminContent.kind, kind)) : db.select().from(adminContent);
+  return query.orderBy(desc(adminContent.sortOrder), desc(adminContent.updatedAt)).limit(200);
+}
+
+export async function getContent(kind: string, slug: string) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(adminContent).where(and(eq(adminContent.kind, kind), eq(adminContent.slug, slug))).limit(1);
+  return result[0];
+}
+
+export async function createContent(input: Omit<InsertAdminContent, "id" | "createdAt" | "updatedAt">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(adminContent).values(input);
+  return result[0].insertId;
+}
+
+export async function updateContent(id: number, input: Partial<Omit<InsertAdminContent, "id" | "createdAt" | "updatedAt">>) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(adminContent).set(input).where(eq(adminContent.id, id));
+}
+
+export async function deleteContent(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(adminContent).where(eq(adminContent.id, id));
+}
+
+export async function createQuoteRequest(input: Omit<InsertQuoteRequest, "id" | "createdAt" | "updatedAt" | "status">) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  const result = await db.insert(quoteRequests).values({ ...input, status: "new" });
+  return result[0].insertId;
+}
+
+export async function listQuoteRequests() {
+  const db = await getDb();
+  if (!db) return [] as QuoteRequest[];
+  return db.select().from(quoteRequests).orderBy(desc(quoteRequests.createdAt)).limit(200);
+}
+
+export async function updateQuoteStatus(id: number, status: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.update(quoteRequests).set({ status }).where(eq(quoteRequests.id, id));
+}
+
+export async function recordAnalyticsEvent(input: Omit<AnalyticsEvent, "id" | "createdAt">) {
+  const db = await getDb();
+  if (!db) return;
+  await db.insert(analyticsEvents).values(input);
+}
+
+export async function listAnalyticsEvents() {
+  const db = await getDb();
+  if (!db) return [] as AnalyticsEvent[];
+  return db.select().from(analyticsEvents).orderBy(desc(analyticsEvents.createdAt)).limit(1000);
 }
 
 export type FeedbackRecord = Feedback;

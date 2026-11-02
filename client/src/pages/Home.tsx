@@ -66,15 +66,17 @@ function QuoteWizard({ onDone }: { onDone: (form: QuoteForm) => void }) {
   </div>;
 }
 
-function QuoteSheet({ onClose }: { onClose: () => void }) {
+function QuoteSheet({ onClose, onSubmit }: { onClose: () => void; onSubmit: (form: QuoteForm) => void }) {
   const [sent, setSent] = useState(false);
-  return <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="quote-title"><div className="quote-sheet"><button className="sheet-close" type="button" onClick={onClose} aria-label="Fechar orçamento"><X size={19} /></button>{sent ? <div className="sheet-success"><div className="sheet-success__icon"><MessageCircle size={24} /></div><small>ORÇAMENTO PREPARADO</small><h2>Quase tudo pronto.</h2><p>O WhatsApp foi aberto com os detalhes do seu aparelho. O valor definitivo será confirmado após avaliação técnica.</p><a className="sheet-next" href={GTECH_CONFIG.whatsappUrl} target="_blank" rel="noreferrer">Abrir WhatsApp <ArrowUpRight size={16} /></a><button className="sheet-back" type="button" onClick={onClose}>Fechar</button></div> : <><h1 id="quote-title" className="sr-only">Simular orçamento</h1><QuoteWizard onDone={(form) => { window.open(whatsappWithMessage(buildWhatsAppMessage(form)), "_blank", "noopener,noreferrer"); setSent(true); }} /></>}</div></div>;
+  return <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-labelledby="quote-title"><div className="quote-sheet"><button className="sheet-close" type="button" onClick={onClose} aria-label="Fechar orçamento"><X size={19} /></button>{sent ? <div className="sheet-success"><div className="sheet-success__icon"><MessageCircle size={24} /></div><small>ORÇAMENTO PREPARADO</small><h2>Quase tudo pronto.</h2><p>O WhatsApp foi aberto com os detalhes do seu aparelho. O valor definitivo será confirmado após avaliação técnica.</p><a className="sheet-next" href={GTECH_CONFIG.whatsappUrl} target="_blank" rel="noreferrer">Abrir WhatsApp <ArrowUpRight size={16} /></a><button className="sheet-back" type="button" onClick={onClose}>Fechar</button></div> : <><h1 id="quote-title" className="sr-only">Simular orçamento</h1><QuoteWizard onDone={(form) => { onSubmit(form); window.open(whatsappWithMessage(buildWhatsAppMessage(form)), "_blank", "noopener,noreferrer"); setSent(true); }} /></>}</div></div>;
 }
 
 function BioContent() {
   const [quoteOpen, setQuoteOpen] = useState(false);
   const [showAssist, setShowAssist] = useState(false);
   const feedbackQuery = trpc.feedback.publicList.useQuery();
+  const quoteMutation = trpc.quotes.create.useMutation();
+  const analyticsMutation = trpc.analytics.track.useMutation();
   const feedback = feedbackQuery.data ?? [];
   const feedbackAverage = feedback.length ? (feedback.reduce((sum, item) => sum + item.rating, 0) / feedback.length).toFixed(1) : null;
 
@@ -86,12 +88,14 @@ function BioContent() {
   }, []);
 
   const closeAssist = () => { sessionStorage.setItem("gtech-inactivity-seen", "1"); setShowAssist(false); };
-  const openQuote = () => { closeAssist(); setQuoteOpen(true); };
+  const track = (eventName: string) => { analyticsMutation.mutate({ eventName, path: window.location.pathname, referrer: document.referrer || undefined }); };
+  const openQuote = () => { closeAssist(); track("budget_started"); setQuoteOpen(true); };
+  const submitQuote = (form: QuoteForm) => { quoteMutation.mutate({ customerName: form.name, brand: form.brand, model: form.model, issue: form.issue, details: form.details || undefined, serviceMode: form.serviceMode, address: form.address || undefined, complement: form.complement || undefined, reference: form.reference || undefined, intent: form.intent }); track("budget_submitted"); };
 
   return <div className="bio-page"><main className="bio-wrap" id="top">
     <div className="bio-topline"><span>G-TECH / ASSISTÊNCIA TÉCNICA</span><span>SP · 2025</span></div>
     <section className="bio-profile"><a className="profile-menu" href="/admin" aria-label="Abrir painel administrativo"><span /><span /><span /></a><BrandMark /><div className="bio-profile__copy"><h1>G-Tech Assistência Técnica</h1><p>Seu aparelho merece cuidado especializado.</p><div className="bio-location"><MapPin size={13} /> São Paulo · bairro a confirmar</div></div></section>
-    <button className="budget-cta" type="button" onClick={() => setQuoteOpen(true)}><span className="budget-cta__icon"><Wrench size={19} /></span><span><strong>Fazer orçamento</strong><small>Envie os detalhes do seu aparelho</small></span><ArrowUpRight size={19} /></button>
+    <button className="budget-cta" type="button" onClick={openQuote}><span className="budget-cta__icon"><Wrench size={19} /></span><span><strong>Fazer orçamento</strong><small>Envie os detalhes do seu aparelho</small></span><ArrowUpRight size={19} /></button>
     <div className="bio-mini-actions"><a href={GTECH_CONFIG.whatsappUrl} target="_blank" rel="noreferrer"><MessageCircle size={17} /><span>WhatsApp</span></a><a href={`tel:+${GTECH_CONFIG.whatsapp}`}><Phone size={17} /><span>Ligar</span></a><a href={GTECH_CONFIG.mapsUrl} target="_blank" rel="noreferrer"><MapPin size={17} /><span>Como chegar</span></a></div>
     <a className="ratings-strip" href={GTECH_CONFIG.mapsUrl} target="_blank" rel="noreferrer"><span className="feedback-stars" aria-hidden="true">{[1, 2, 3, 4, 5].map((star) => <Star key={star} size={16} fill="currentColor" />)}</span><span><strong>Feedback real de clientes</strong><small>{feedbackAverage ? `${feedbackAverage}/5 · ver avaliações` : "Ver avaliações reais no Google"}</small></span><ArrowUpRight size={16} /></a>
     <section className="bio-links" aria-label="Opções G-Tech"><QuickLink icon={<ShieldCheck size={18} />} label="Garantia e como funciona" href="#confia" onClick={() => document.getElementById("confia")?.setAttribute("open", "true")} /><QuickLink icon={<Instagram size={18} />} label="Acompanhar no Instagram" href={GTECH_CONFIG.instagramUrl} external /><QuickLink icon={<MessageCircle size={18} />} label="Falar com a equipe" href={GTECH_CONFIG.whatsappUrl} external /></section>
@@ -100,7 +104,7 @@ function BioContent() {
     <details className="bio-details"><summary><span><Sparkles size={17} /> Mais da G-Tech</span><ChevronDown size={17} /></summary><div className="bio-details__body bio-more"><a href={GTECH_CONFIG.catalogUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.catalogUrl) event.preventDefault(); }}><span>Produtos e acessórios</span><small>{GTECH_CONFIG.catalogUrl ? "Abrir catálogo" : "Link em configuração"}</small><ArrowUpRight size={15} /></a><a href={GTECH_CONFIG.vipGroupUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.vipGroupUrl) event.preventDefault(); }}><span>Grupo VIP de ofertas</span><small>{GTECH_CONFIG.vipGroupUrl ? "Entrar no grupo" : "Link em configuração"}</small><ArrowUpRight size={15} /></a><a href={GTECH_CONFIG.youtubeUrl || "#"} onClick={(event) => { if (!GTECH_CONFIG.youtubeUrl) event.preventDefault(); }}><span>Vídeos e dicas</span><small>{GTECH_CONFIG.youtubeUrl ? "Assistir no YouTube" : "Canal em configuração"}</small><ArrowUpRight size={15} /></a></div></details>
     <div className="bio-promo"><img src={GTECH_CONFIG.campaignImageUrl} alt="Campanha G-Tech e Shopee" /><div><small>NA LOJA</small><strong>Recebemos seus pacotes.</strong><span>Confira os detalhes pelo WhatsApp.</span></div><ArrowUpRight size={17} /></div>
     <footer className="bio-footer"><p>© 2025 G-Tech · CNPJ {GTECH_CONFIG.cnpj}</p><p><a href="#privacidade">Privacidade</a> · <a href="#termos">Termos</a> · <a href="#garantia">Garantia</a></p></footer>
-  </main>{quoteOpen && <QuoteSheet onClose={() => setQuoteOpen(false)} />}{showAssist && <div className="assist-toast"><button type="button" onClick={closeAssist} aria-label="Fechar"><X size={15} /></button><Sparkles size={17} /><div><strong>Precisa de ajuda?</strong><span>Faça um orçamento rápido.</span></div><button type="button" onClick={openQuote}>Orçar <ArrowUpRight size={14} /></button></div>}</div>;
+  </main>{quoteOpen && <QuoteSheet onClose={() => setQuoteOpen(false)} onSubmit={submitQuote} />}{showAssist && <div className="assist-toast"><button type="button" onClick={closeAssist} aria-label="Fechar"><X size={15} /></button><Sparkles size={17} /><div><strong>Precisa de ajuda?</strong><span>Faça um orçamento rápido.</span></div><button type="button" onClick={openQuote}>Orçar <ArrowUpRight size={14} /></button></div>}</div>;
 }
 
 function CheckLine({ text }: { text: string }) { return <p><ShieldCheck size={14} /> {text}</p>; }

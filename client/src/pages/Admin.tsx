@@ -1,97 +1,98 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Check, LogOut, Pencil, Plus, ShieldCheck, Star, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { Activity, ArrowLeft, BarChart3, Check, ClipboardList, ExternalLink, FileText, LayoutDashboard, Link2, LogOut, Megaphone, Pencil, Plus, Quote, Settings, ShieldCheck, Smartphone, Star, Trash2, Users, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
-type AdminSessionState = {
-  checked: boolean;
-  authenticated: boolean;
-  email: string;
-};
+type AdminSessionState = { checked: boolean; authenticated: boolean; email: string };
+type Tab = "dashboard" | "editor" | "links" | "simulator" | "orders" | "clients" | "promotions" | "feedback" | "analytics" | "settings" | "security";
+type LoginResponse = { authenticated?: boolean; email?: string; error?: string };
+type ContentForm = { kind: string; slug: string; title: string; subtitle: string; body: string; url: string; dataJson: string; active: boolean; sortOrder: number };
 
-type LoginResponse = {
-  authenticated?: boolean;
-  email?: string;
-  error?: string;
-};
+const emptyFeedback = { customerName: "", rating: 5, comment: "", reviewDate: "", source: "Google", published: false };
+const emptyContent: ContentForm = { kind: "link", slug: "", title: "", subtitle: "", body: "", url: "", dataJson: "", active: true, sortOrder: 0 };
+const nav: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
+  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { id: "editor", label: "Editor do Biolink", icon: Smartphone },
+  { id: "links", label: "Botões e Links", icon: Link2 },
+  { id: "simulator", label: "Simulador", icon: Quote },
+  { id: "orders", label: "Pedidos", icon: ClipboardList },
+  { id: "clients", label: "Clientes", icon: Users },
+  { id: "promotions", label: "Promoções", icon: Megaphone },
+  { id: "feedback", label: "Avaliações", icon: Star },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "settings", label: "Configurações", icon: Settings },
+  { id: "security", label: "Segurança", icon: ShieldCheck },
+];
 
-const emptyForm = { customerName: "", rating: 5, comment: "", reviewDate: "", source: "Google", published: false };
-
-async function readJson<T>(response: Response) {
-  return (await response.json().catch(() => ({}))) as T;
-}
+async function readJson<T>(response: Response) { return (await response.json().catch(() => ({}))) as T; }
 
 export default function Admin() {
   const [session, setSession] = useState<AdminSessionState>({ checked: false, authenticated: false, email: "" });
+  const [tab, setTab] = useState<Tab>("dashboard");
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [loginError, setLoginError] = useState("");
   const [loginPending, setLoginPending] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState(emptyForm);
+  const [feedbackEditingId, setFeedbackEditingId] = useState<number | null>(null);
+  const [feedbackForm, setFeedbackForm] = useState(emptyFeedback);
+  const [contentEditingId, setContentEditingId] = useState<number | null>(null);
+  const [contentForm, setContentForm] = useState<ContentForm>(emptyContent);
 
   useEffect(() => {
     let active = true;
-    fetch("/api/admin/session", { credentials: "include" })
-      .then((response) => readJson<{ authenticated: boolean; email?: string }>(response))
-      .then((data) => {
-        if (active) setSession({ checked: true, authenticated: Boolean(data.authenticated), email: data.email ?? "" });
-      })
-      .catch(() => {
-        if (active) setSession({ checked: true, authenticated: false, email: "" });
-      });
+    fetch("/api/admin/session", { credentials: "include" }).then((response) => readJson<{ authenticated: boolean; email?: string }>(response)).then((data) => {
+      if (active) setSession({ checked: true, authenticated: Boolean(data.authenticated), email: data.email ?? "" });
+    }).catch(() => { if (active) setSession({ checked: true, authenticated: false, email: "" }); });
     return () => { active = false; };
   }, []);
 
+  const contentKind = tab === "editor" ? "section" : tab === "links" ? "link" : tab === "simulator" ? "repair" : tab === "promotions" ? "promotion" : tab === "settings" ? "settings" : undefined;
   const feedbackQuery = trpc.feedback.adminList.useQuery(undefined, { enabled: session.authenticated });
-  const createMutation = trpc.feedback.create.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetForm(); } });
-  const updateMutation = trpc.feedback.update.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetForm(); } });
-  const removeMutation = trpc.feedback.remove.useMutation({ onSuccess: () => feedbackQuery.refetch() });
+  const contentQuery = trpc.content.adminList.useQuery(contentKind ? { kind: contentKind } : undefined, { enabled: session.authenticated && Boolean(contentKind) });
+  const quotesQuery = trpc.quotes.adminList.useQuery(undefined, { enabled: session.authenticated });
+  const analyticsQuery = trpc.analytics.adminList.useQuery(undefined, { enabled: session.authenticated });
+  const createFeedback = trpc.feedback.create.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetFeedback(); } });
+  const updateFeedback = trpc.feedback.update.useMutation({ onSuccess: () => { feedbackQuery.refetch(); resetFeedback(); } });
+  const removeFeedback = trpc.feedback.remove.useMutation({ onSuccess: () => feedbackQuery.refetch() });
+  const createContent = trpc.content.create.useMutation({ onSuccess: () => { contentQuery.refetch(); resetContent(); } });
+  const updateContent = trpc.content.update.useMutation({ onSuccess: () => { contentQuery.refetch(); resetContent(); } });
+  const removeContent = trpc.content.remove.useMutation({ onSuccess: () => contentQuery.refetch() });
+  const updateQuoteStatus = trpc.quotes.updateStatus.useMutation({ onSuccess: () => quotesQuery.refetch() });
 
-  function resetForm() {
-    setEditingId(null);
-    setForm(emptyForm);
-  }
-
-  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setLoginPending(true);
-    setLoginError("");
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setLoginPending(true); setLoginError("");
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(loginForm),
-      });
+      const response = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(loginForm) });
       const data = await readJson<LoginResponse>(response);
-      if (!response.ok || !data.authenticated) {
-        setLoginError(data.error ?? "Não foi possível entrar.");
-        return;
-      }
-      setSession({ checked: true, authenticated: true, email: data.email ?? loginForm.email.trim().toLowerCase() });
-      setLoginForm({ email: loginForm.email, password: "" });
-    } catch {
-      setLoginError("Não foi possível conectar ao painel. Tente novamente.");
-    } finally {
-      setLoginPending(false);
-    }
+      if (!response.ok || !data.authenticated) { setLoginError(data.error ?? "Não foi possível entrar."); return; }
+      setSession({ checked: true, authenticated: true, email: data.email ?? loginForm.email.trim().toLowerCase() }); setLoginForm({ email: loginForm.email, password: "" });
+    } catch { setLoginError("Não foi possível conectar ao painel. Tente novamente."); } finally { setLoginPending(false); }
   }
 
-  async function handleLogout() {
-    await fetch("/api/admin/logout", { method: "POST", credentials: "include" }).catch(() => undefined);
-    setSession({ checked: true, authenticated: false, email: "" });
-    resetForm();
-  }
+  async function handleLogout() { await fetch("/api/admin/logout", { method: "POST", credentials: "include" }).catch(() => undefined); setSession({ checked: true, authenticated: false, email: "" }); }
+  function resetFeedback() { setFeedbackEditingId(null); setFeedbackForm(emptyFeedback); }
+  function resetContent() { setContentEditingId(null); setContentForm({ ...emptyContent, kind: contentKind ?? "link" }); }
+  function editContent(item: NonNullable<typeof contentQuery.data>[number]) { setContentEditingId(item.id); setContentForm({ kind: item.kind, slug: item.slug, title: item.title, subtitle: item.subtitle ?? "", body: item.body ?? "", url: item.url ?? "", dataJson: item.dataJson ?? "", active: item.active === 1, sortOrder: item.sortOrder }); }
 
-  const canSave = form.customerName.trim().length > 1 && form.comment.trim().length > 2;
-  const isSaving = createMutation.isPending || updateMutation.isPending;
-  const average = useMemo(() => {
-    const list = feedbackQuery.data ?? [];
-    return list.length ? (list.reduce((sum, item) => sum + item.rating, 0) / list.length).toFixed(1) : "—";
-  }, [feedbackQuery.data]);
+  const feedbackAverage = useMemo(() => { const list = feedbackQuery.data ?? []; return list.length ? (list.reduce((sum, item) => sum + item.rating, 0) / list.length).toFixed(1) : "—"; }, [feedbackQuery.data]);
+  const eventCounts = useMemo(() => (analyticsQuery.data ?? []).reduce<Record<string, number>>((acc, item) => { acc[item.eventName] = (acc[item.eventName] ?? 0) + 1; return acc; }, {}), [analyticsQuery.data]);
+  const clients = useMemo(() => { const seen = new Map<string, { name: string; phone: string; last: string; total: number }>(); (quotesQuery.data ?? []).forEach((item) => { const key = `${item.customerName}|${item.phone ?? ""}`; const current = seen.get(key); seen.set(key, { name: item.customerName, phone: item.phone ?? "Não informado", last: item.createdAt.toLocaleString("pt-BR"), total: (current?.total ?? 0) + 1 }); }); return Array.from(seen.values()); }, [quotesQuery.data]);
 
   if (!session.checked) return <div className="admin-state">Verificando acesso seguro...</div>;
+  if (!session.authenticated) return <main className="admin-login-page"><form className="admin-login-card" onSubmit={handleLogin}><ShieldCheck size={30} /><span className="admin-eyebrow">G-TECH / ÁREA RESTRITA</span><h1>Painel administrativo</h1><p>Entre com o e-mail e a senha administrativa para gerenciar o conteúdo real da G-Tech.</p><label>E-mail<input type="email" value={loginForm.email} onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })} placeholder="seu@email.com" autoComplete="username" required /></label><label>Senha<input type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} placeholder="Sua senha" autoComplete="current-password" required /></label>{loginError && <div className="admin-form-error" role="alert">{loginError}</div>}<button className="admin-button admin-button--primary" type="submit" disabled={loginPending}>{loginPending ? "Entrando..." : "Entrar no painel"}</button><a className="admin-button admin-button--secondary" href="/">Voltar ao Link na Bio</a></form></main>;
 
-  if (!session.authenticated) return <main className="admin-login-page"><form className="admin-login-card" onSubmit={handleLogin}><ShieldCheck size={30} /><span className="admin-eyebrow">G-TECH / ÁREA RESTRITA</span><h1>Painel administrativo</h1><p>Entre com o e-mail e a senha administrativa para gerenciar os feedbacks reais da G-Tech.</p><label>E-mail<input type="email" value={loginForm.email} onChange={(event) => setLoginForm({ ...loginForm, email: event.target.value })} placeholder="seu@email.com" autoComplete="username" required /></label><label>Senha<input type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} placeholder="Sua senha" autoComplete="current-password" required /></label>{loginError && <div className="admin-form-error" role="alert">{loginError}</div>}<button className="admin-button admin-button--primary" type="submit" disabled={loginPending}>{loginPending ? "Entrando..." : "Entrar no painel"}</button><a className="admin-button admin-button--secondary" href="/">Voltar ao Link na Bio</a></form></main>;
-
-  return <main className="admin-page"><header className="admin-header"><div><span className="admin-eyebrow">G-TECH / PAINEL ADMINISTRATIVO</span><h1>Feedback & avaliações</h1><p>Cadastre apenas avaliações reais e publique somente as aprovadas pela equipe.</p><small className="admin-session-label">Sessão ativa: {session.email}</small></div><div className="admin-header__actions"><a className="admin-button admin-button--secondary" href="/"><ArrowLeft size={15} /> Link na Bio</a><button className="admin-button admin-button--secondary" onClick={handleLogout}><LogOut size={15} /> Sair</button></div></header><section className="admin-grid"><div className="admin-card admin-card--form"><div className="admin-card__head"><div><span className="admin-eyebrow">{editingId ? "EDITAR REGISTRO" : "NOVO REGISTRO"}</span><h2>{editingId ? "Atualizar avaliação" : "Cadastrar avaliação"}</h2></div>{editingId && <button className="admin-icon-button" onClick={resetForm} aria-label="Cancelar edição"><X size={17} /></button>}</div><label>Nome do cliente<input value={form.customerName} onChange={(event) => setForm({ ...form, customerName: event.target.value })} placeholder="Nome real do cliente" /></label><label>Nota<div className="admin-rating-input">{[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} className={value <= form.rating ? "is-active" : ""} onClick={() => setForm({ ...form, rating: value })} aria-label={`${value} estrelas`}><Star size={22} fill="currentColor" /></button>)}</div></label><label>Comentário<textarea value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} placeholder="Cole o comentário real recebido" rows={5} /></label><div className="admin-form-row"><label>Data<input value={form.reviewDate} onChange={(event) => setForm({ ...form, reviewDate: event.target.value })} placeholder="Ex.: 02/11/2026" /></label><label>Fonte<input value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} placeholder="Google" /></label></div><label className="admin-check"><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} /> Publicar no Link na Bio</label><button className="admin-button admin-button--primary" disabled={!canSave || isSaving} onClick={() => { if (editingId) updateMutation.mutate({ id: editingId, ...form }); else createMutation.mutate(form); }}>{editingId ? <Check size={16} /> : <Plus size={16} />}{isSaving ? "Salvando..." : editingId ? "Salvar alterações" : "Cadastrar avaliação"}</button></div><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">VISÃO GERAL</span><h2>Registros reais</h2></div><div className="admin-stat"><strong>{average}</strong><span>{feedbackQuery.data?.length ?? 0} registros</span></div></div>{feedbackQuery.isLoading ? <p className="admin-muted">Carregando avaliações...</p> : feedbackQuery.data?.length ? <div className="admin-review-list">{feedbackQuery.data.map((item) => <article className="admin-review" key={item.id}><div className="admin-review__top"><strong>{item.customerName}</strong><span className={item.published ? "status status--live" : "status"}>{item.published ? "Publicado" : "Rascunho"}</span></div><div className="admin-stars">{Array.from({ length: 5 }, (_, index) => <Star key={index} size={14} fill={index < item.rating ? "currentColor" : "none"} />)}</div><p>{item.comment}</p><small>{item.source}{item.reviewDate ? ` · ${item.reviewDate}` : ""}</small><div className="admin-review__actions"><button onClick={() => { setEditingId(item.id); setForm({ customerName: item.customerName, rating: item.rating, comment: item.comment, reviewDate: item.reviewDate ?? "", source: item.source, published: item.published === 1 }); }}><Pencil size={14} /> Editar</button><button className="danger" onClick={() => { if (window.confirm("Remover esta avaliação?")) removeMutation.mutate({ id: item.id }); }}><Trash2 size={14} /> Remover</button></div></article>)}</div> : <div className="admin-empty"><Star size={24} /><h3>Nenhuma avaliação cadastrada</h3><p>Adicione avaliações reais recebidas pela G-Tech. Nada será inventado automaticamente.</p></div>}</div></section></main>;
+  const currentLabel = nav.find((item) => item.id === tab)?.label ?? "Dashboard";
+  return <main className="admin-shell"><aside className="admin-sidebar"><div className="admin-brand"><span>G-TECH</span><small>CONTROL CENTER</small></div><nav aria-label="Módulos administrativos">{nav.map(({ id, label, icon: Icon }) => <button key={id} className={tab === id ? "is-active" : ""} onClick={() => { setTab(id); resetContent(); }}><Icon size={16} />{label}</button>)}</nav><div className="admin-sidebar__bottom"><small>{session.email}</small><button onClick={handleLogout}><LogOut size={15} /> Sair</button></div></aside><section className="admin-workspace"><header className="admin-workspace__header"><div><span className="admin-eyebrow">G-TECH / PAINEL ADMINISTRATIVO</span><h1>{currentLabel}</h1><p>Gerencie a operação da G-Tech pelo celular ou computador.</p></div><div className="admin-header__actions"><a className="admin-button admin-button--secondary" href="/"><ArrowLeft size={15} /> Link na Bio</a><button className="admin-button admin-button--secondary" onClick={handleLogout}><LogOut size={15} /> Sair</button></div></header><div className="admin-mobile-nav">{nav.map(({ id, label }) => <button key={id} className={tab === id ? "is-active" : ""} onClick={() => setTab(id)}>{label}</button>)}</div>{tab === "dashboard" && <Dashboard quotes={quotesQuery.data ?? []} feedbackCount={feedbackQuery.data?.length ?? 0} analytics={eventCounts} />} {tab === "feedback" && <FeedbackModule data={feedbackQuery.data ?? []} average={feedbackAverage} form={feedbackForm} setForm={setFeedbackForm} editingId={feedbackEditingId} setEditingId={setFeedbackEditingId} reset={resetFeedback} create={createFeedback} update={updateFeedback} remove={removeFeedback} />} {contentKind && <ContentModule kind={contentKind} data={contentQuery.data ?? []} form={contentForm} setForm={setContentForm} editingId={contentEditingId} edit={editContent} reset={resetContent} create={createContent} update={updateContent} remove={removeContent} />} {tab === "orders" && <OrdersModule data={quotesQuery.data ?? []} updateStatus={updateQuoteStatus} />} {tab === "clients" && <ClientsModule data={clients} />} {tab === "analytics" && <AnalyticsModule data={analyticsQuery.data ?? []} counts={eventCounts} />} {tab === "security" && <SecurityModule email={session.email} />} </section></main>;
 }
+
+function Dashboard({ quotes, feedbackCount, analytics }: { quotes: any[]; feedbackCount: number; analytics: Record<string, number> }) { const cards = [{ label: "Pedidos", value: quotes.length, icon: ClipboardList }, { label: "Novos", value: quotes.filter((item: any) => item.status === "new").length, icon: Activity }, { label: "Avaliações", value: feedbackCount, icon: Star }, { label: "Eventos", value: Object.values(analytics).reduce((a, b) => a + b, 0), icon: BarChart3 }]; return <section className="admin-panel"><div className="admin-kpi-grid">{cards.map(({ label, value, icon: Icon }) => <article className="admin-kpi" key={label}><Icon size={18} /><span>{label}</span><strong>{value}</strong><small>Dados registrados no sistema</small></article>)}</div><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">VISÃO OPERACIONAL</span><h2>Próximas ações</h2></div></div><div className="admin-next-grid"><div><ClipboardList size={18} /><strong>Pedidos de orçamento</strong><p>Acompanhe solicitações reais enviadas pelo simulador público e avance o status do atendimento.</p></div><div><Link2 size={18} /><strong>Conteúdo da página</strong><p>Edite links, promoções, serviços e configurações sem alterar o código.</p></div><div><BarChart3 size={18} /><strong>Analytics</strong><p>Os números aparecem somente depois que eventos reais forem registrados.</p></div></div></div></section>; }
+
+function ContentModule({ kind, data, form, setForm, editingId, edit, reset, create, update, remove }: { kind: string; data: any[]; form: ContentForm; setForm: (value: ContentForm) => void; editingId: number | null; edit: (item: any) => void; reset: () => void; create: { mutate: (value: any) => void; isPending: boolean }; update: { mutate: (value: any) => void; isPending: boolean }; remove: { mutate: (value: { id: number }) => void }; }) { const labels: Record<string, string> = { section: "Seções do Biolink", link: "Botões e links", repair: "Marcas, modelos e reparos", promotion: "Promoções", settings: "Configurações da empresa" }; const save = () => { const payload = { ...form, subtitle: form.subtitle || undefined, body: form.body || undefined, url: form.url || undefined, dataJson: form.dataJson || undefined }; if (editingId) update.mutate({ id: editingId, ...payload }); else create.mutate(payload); }; return <section className="admin-panel"><div className="admin-grid admin-grid--workspace"><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">{editingId ? "EDITAR REGISTRO" : "NOVO REGISTRO"}</span><h2>{editingId ? "Atualizar" : "Cadastrar"} {labels[kind]?.toLowerCase()}</h2></div>{editingId && <button className="admin-icon-button" onClick={reset} aria-label="Cancelar edição"><X size={17} /></button>}</div><label>Identificador<input value={form.slug} onChange={(event) => setForm({ ...form, slug: event.target.value })} placeholder="ex.: whatsapp, bateria, garantia" /></label><label>Título<input value={form.title} onChange={(event) => setForm({ ...form, title: event.target.value })} placeholder="Nome exibido" /></label><label>Texto secundário<input value={form.subtitle} onChange={(event) => setForm({ ...form, subtitle: event.target.value })} placeholder="Descrição curta" /></label><label>Conteúdo<textarea value={form.body} onChange={(event) => setForm({ ...form, body: event.target.value })} placeholder="Descrição, observações ou regras" rows={4} /></label><label>URL<input value={form.url} onChange={(event) => setForm({ ...form, url: event.target.value })} placeholder="https://..." /></label>{kind === "settings" && <label>Dados estruturados (JSON)<textarea value={form.dataJson} onChange={(event) => setForm({ ...form, dataJson: event.target.value })} placeholder='{"brand":"G-Tech Assistência Técnica"}' rows={6} /></label>}<div className="admin-form-row"><label>Ordem<input type="number" value={form.sortOrder} onChange={(event) => setForm({ ...form, sortOrder: Number(event.target.value) })} /></label><label className="admin-check"><input type="checkbox" checked={form.active} onChange={(event) => setForm({ ...form, active: event.target.checked })} /> Ativo</label></div><button className="admin-button admin-button--primary" disabled={!form.slug.trim() || !form.title.trim() || create.isPending || update.isPending} onClick={save}>{editingId ? <Check size={16} /> : <Plus size={16} />}{create.isPending || update.isPending ? "Salvando..." : editingId ? "Salvar alterações" : "Cadastrar"}</button></div><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">REGISTROS PERSISTENTES</span><h2>{labels[kind]}</h2></div><strong className="admin-stat">{data.length}</strong></div>{data.length ? <div className="admin-review-list">{data.map((item) => <article className="admin-review" key={item.id}><div className="admin-review__top"><strong>{item.title}</strong><span className={item.active ? "status status--live" : "status"}>{item.active ? "Ativo" : "Inativo"}</span></div><small>{item.slug}{item.url ? ` · ${item.url}` : ""}</small>{item.subtitle && <p>{item.subtitle}</p>}<div className="admin-review__actions"><button onClick={() => edit(item)}><Pencil size={14} /> Editar</button><button className="danger" onClick={() => { if (window.confirm("Remover este registro?")) remove.mutate({ id: item.id }); }}><Trash2 size={14} /> Remover</button></div></article>)}</div> : <div className="admin-empty"><FileText size={24} /><h3>Nenhum registro</h3><p>Cadastre o primeiro item. Nada será criado automaticamente.</p></div>}</div></div></section>; }
+
+function FeedbackModule({ data, average, form, setForm, editingId, setEditingId, reset, create, update, remove }: any) { const save = () => { if (editingId) update.mutate({ id: editingId, ...form }); else create.mutate(form); }; return <section className="admin-panel"><div className="admin-grid admin-grid--workspace"><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">{editingId ? "EDITAR REGISTRO" : "NOVO REGISTRO"}</span><h2>{editingId ? "Atualizar avaliação" : "Cadastrar avaliação"}</h2></div></div><label>Nome do cliente<input value={form.customerName} onChange={(event) => setForm({ ...form, customerName: event.target.value })} placeholder="Nome real" /></label><label>Nota<div className="admin-rating-input">{[1, 2, 3, 4, 5].map((value) => <button type="button" key={value} className={value <= form.rating ? "is-active" : ""} onClick={() => setForm({ ...form, rating: value })} aria-label={`${value} estrelas`}><Star size={22} fill="currentColor" /></button>)}</div></label><label>Comentário<textarea value={form.comment} onChange={(event) => setForm({ ...form, comment: event.target.value })} placeholder="Cole o comentário real" rows={5} /></label><div className="admin-form-row"><label>Data<input value={form.reviewDate} onChange={(event) => setForm({ ...form, reviewDate: event.target.value })} placeholder="02/11/2026" /></label><label>Fonte<input value={form.source} onChange={(event) => setForm({ ...form, source: event.target.value })} /></label></div><label className="admin-check"><input type="checkbox" checked={form.published} onChange={(event) => setForm({ ...form, published: event.target.checked })} /> Publicar</label><button className="admin-button admin-button--primary" disabled={form.customerName.trim().length < 2 || form.comment.trim().length < 3} onClick={save}>{editingId ? "Salvar alterações" : "Cadastrar avaliação"}</button></div><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">REGISTROS REAIS</span><h2>Avaliações</h2></div><div className="admin-stat"><strong>{average}</strong><span>{data.length} registros</span></div></div>{data.length ? <div className="admin-review-list">{data.map((item: any) => <article className="admin-review" key={item.id}><div className="admin-review__top"><strong>{item.customerName}</strong><span className={item.published ? "status status--live" : "status"}>{item.published ? "Publicado" : "Rascunho"}</span></div><div className="admin-stars">{Array.from({ length: 5 }, (_, index) => <Star key={index} size={14} fill={index < item.rating ? "currentColor" : "none"} />)}</div><p>{item.comment}</p><small>{item.source}{item.reviewDate ? ` · ${item.reviewDate}` : ""}</small><div className="admin-review__actions"><button onClick={() => { setEditingId(item.id); setForm({ customerName: item.customerName, rating: item.rating, comment: item.comment, reviewDate: item.reviewDate ?? "", source: item.source, published: item.published === 1 }); }}><Pencil size={14} /> Editar</button><button className="danger" onClick={() => { if (window.confirm("Remover esta avaliação?")) remove.mutate({ id: item.id }); }}><Trash2 size={14} /> Remover</button></div></article>)}</div> : <div className="admin-empty"><Star size={24} /><h3>Nenhuma avaliação cadastrada</h3><p>Adicione apenas avaliações reais. Nada será inventado automaticamente.</p></div>}</div></div></section>; }
+
+function OrdersModule({ data, updateStatus }: any) { const labels: Record<string, string> = { new: "Novo", in_review: "Em análise", awaiting_approval: "Aguardando aprovação", approved: "Aprovado", in_repair: "Em reparo", completed: "Concluído", delivered: "Entregue", cancelled: "Cancelado" }; return <section className="admin-panel"><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">PEDIDOS REGISTRADOS</span><h2>Orçamentos e atendimentos</h2></div><strong className="admin-stat">{data.length}</strong></div>{data.length ? <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>Cliente</th><th>Aparelho</th><th>Defeito</th><th>Data</th><th>Status</th></tr></thead><tbody>{data.map((item: any) => <tr key={item.id}><td><strong>{item.customerName}</strong><small>{item.phone || "Contato não informado"}</small></td><td>{item.brand} · {item.model}</td><td>{item.issue}</td><td>{item.createdAt.toLocaleDateString("pt-BR")}</td><td><select value={item.status} onChange={(event) => updateStatus.mutate({ id: item.id, status: event.target.value })}>{Object.entries(labels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></td></tr>)}</tbody></table></div> : <div className="admin-empty"><ClipboardList size={24} /><h3>Nenhum pedido recebido</h3><p>Quando um cliente enviar o simulador, o pedido aparecerá aqui.</p></div>}</div></section>; }
+
+function ClientsModule({ data }: { data: { name: string; phone: string; last: string; total: number }[] }) { return <section className="admin-panel"><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">CRM DERIVADO DOS PEDIDOS</span><h2>Clientes</h2></div><strong className="admin-stat">{data.length}</strong></div>{data.length ? <div className="admin-review-list">{data.map((item) => <article className="admin-review" key={`${item.name}-${item.phone}`}><div className="admin-review__top"><strong>{item.name}</strong><span className="status status--live">{item.total} pedido(s)</span></div><p>{item.phone}</p><small>Último pedido registrado: {item.last}</small></article>)}</div> : <div className="admin-empty"><Users size={24} /><h3>Nenhum cliente ainda</h3><p>Os clientes serão formados a partir dos pedidos reais de orçamento.</p></div>}</div></section>; }
+
+function AnalyticsModule({ data, counts }: { data: any[]; counts: Record<string, number> }) { return <section className="admin-panel"><div className="admin-kpi-grid">{Object.entries(counts).map(([name, count]) => <article className="admin-kpi" key={name}><Activity size={18} /><span>{name}</span><strong>{count}</strong><small>eventos registrados</small></article>)}</div><div className="admin-card"><div className="admin-card__head"><div><span className="admin-eyebrow">SEM DADOS FICTÍCIOS</span><h2>Últimos eventos</h2></div></div>{data.length ? <div className="admin-review-list">{data.slice(0, 40).map((item) => <article className="admin-review" key={item.id}><div className="admin-review__top"><strong>{item.eventName}</strong><small>{item.createdAt.toLocaleString("pt-BR")}</small></div><p>{item.path || "/"}</p></article>)}</div> : <div className="admin-empty"><BarChart3 size={24} /><h3>Analytics aguardando dados</h3><p>O painel só exibe números depois que eventos reais forem registrados.</p></div>}</div></section>; }
+
+function SecurityModule({ email }: { email: string }) { return <section className="admin-panel"><div className="admin-card security-card"><ShieldCheck size={28} /><span className="admin-eyebrow">SESSÃO PROTEGIDA</span><h2>Acesso administrativo ativo</h2><p>Você está conectado como <strong>{email}</strong>. A sessão usa cookie seguro e expiração configurada no servidor. Google Meu Negócio e API Google continuam deliberadamente fora desta etapa.</p><div className="security-list"><span><Check size={15} /> Credencial fora do frontend</span><span><Check size={15} /> Sessão persistente no banco</span><span><Check size={15} /> Procedures administrativas protegidas</span></div></div></section>; }
