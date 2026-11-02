@@ -18,7 +18,7 @@
 ## Persistência e painel administrativo
 
 - [x] Criar a primeira tabela persistente `feedback` no banco gerenciado, com nome do cliente, nota, comentário, data, fonte, status de publicação e timestamps; não inserir avaliações fictícias.
-- [x] Criar `/admin` protegido por autenticação Manus OAuth e autorização por papel de administrador; visitantes não devem acessar os procedimentos administrativos.
+- [x] Criar `/admin` protegido por login próprio de e-mail e senha; armazenar a senha apenas como variável protegida, usar sessão aleatória persistida somente como hash, cookie `HttpOnly/Secure/SameSite=None`, expiração de sete dias e logout; visitantes não devem acessar os procedimentos administrativos.
 - [x] Permitir no painel cadastrar, editar, publicar/despublicar e remover avaliações reais, com cálculo da média somente a partir dos registros existentes.
 - [ ] Persistir também configuração da loja, links, marcas, modelos, defeitos, preços, regras de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets no banco gerenciado.
 - [ ] Permitir upload/substituição de documentos e imagens com metadados persistidos e endereços estáveis `/manus-storage/<key>`.

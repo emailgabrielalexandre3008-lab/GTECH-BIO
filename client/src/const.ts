@@ -28,5 +28,11 @@ export const startLogin = () => {
   url.searchParams.set("state", state);
   url.searchParams.set("responseType", "code");
 
-  window.location.href = url.toString();
+  // When Preview is embedded cross-site, start OAuth in the top-level browser
+  // context so the one-time state cookie is not trapped by iframe storage rules.
+  if (window.top) {
+    window.top.location.href = url.toString();
+  } else {
+    window.location.href = url.toString();
+  }
 };

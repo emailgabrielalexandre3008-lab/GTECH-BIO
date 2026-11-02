@@ -1,6 +1,6 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq, gt, lt } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { Feedback, InsertFeedback, feedback, InsertUser, users } from "../drizzle/schema";
+import { AdminSession, adminSessions, Feedback, InsertFeedback, feedback, InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -117,6 +117,26 @@ export async function deleteFeedback(id: number) {
   const db = await getDb();
   if (!db) throw new Error("Database is not available");
   await db.delete(feedback).where(eq(feedback.id, id));
+}
+
+export async function createAdminSession(input: { tokenHash: string; email: string; expiresAt: Date }) {
+  const db = await getDb();
+  if (!db) throw new Error("Database is not available");
+  await db.delete(adminSessions).where(lt(adminSessions.expiresAt, new Date()));
+  await db.insert(adminSessions).values(input);
+}
+
+export async function getAdminSessionByTokenHash(tokenHash: string): Promise<AdminSession | undefined> {
+  const db = await getDb();
+  if (!db) return undefined;
+  const result = await db.select().from(adminSessions).where(and(eq(adminSessions.tokenHash, tokenHash), gt(adminSessions.expiresAt, new Date()))).limit(1);
+  return result[0];
+}
+
+export async function deleteAdminSession(tokenHash: string) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(adminSessions).where(eq(adminSessions.tokenHash, tokenHash));
 }
 
 export type FeedbackRecord = Feedback;
