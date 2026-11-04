@@ -385,3 +385,44 @@ O upload foi validado com resposta HTTP 200 e URL de Storage. A página pública
 ## Atualização de 04/11/2026 — Fallback de sessão administrativa no Preview
 
 Foi corrigido o erro `You do not have required permission (10002)` que ocorria no `/admin` quando o Preview incorporado em Safari/iPhone bloqueava o cookie HttpOnly `gtech_admin_session` nas chamadas tRPC. O login continua usando o cookie como caminho principal, mas agora também entrega um token de sessão temporário ao frontend, armazenado apenas em `sessionStorage` durante a sessão do navegador. O backend aceita esse token somente pelo header `X-GTech-Admin-Session`, e as chamadas tRPC e endpoints administrativos usam o fallback quando necessário. O logout revoga também esse token. Nenhuma regra comercial, preço, catálogo ou dado de cliente foi alterado.
+
+
+## Atualização de 04/11/2026 — Dados oficiais para configuração comercial
+
+O proprietário forneceu novos dados para orientar a configuração do sistema:
+
+### Endereço e horários
+
+- Rua Dr. Alarico Silveira, 86 — São Paulo — SP.
+- CEP: 03502-040.
+- Bairro: Vila Aricanduva, ainda pendente de confirmação final.
+- Segunda a sexta: 09h às 18h.
+- Sábado: 10h às 15h.
+- Domingo: 10h às 15h.
+
+### Logística
+
+- A G-Tech oferece serviço de busca e entrega.
+- Pode utilizar motoboy ou Uber Flash.
+- Retirada gratuita para distâncias inferiores a 1 km.
+- Taxas acima de 1 km ainda não estão cadastradas.
+- O sistema não pode inventar ou exibir taxa de entrega não configurada.
+
+### Peças e estoque
+
+- Fornecedor principal: Tyros Cell.
+- Existem tabelas de frontais, componentes e baterias.
+- Estoque e prazo devem ser confirmados pela equipe antes de serem informados ao cliente.
+
+### Precificação e políticas
+
+- Fórmula de peças: custo × 2 + R$ 30.
+- Desconto para pagamento via Pix: 5%.
+- Serviços específicos usam preços cadastrados individualmente.
+- Valores não cadastrados devem aparecer como “Sob avaliação técnica”.
+- Garantia de aparelhos usados: 30 dias, conforme política comercial registrada.
+- Troca de acessórios: 7 dias, conforme política comercial registrada.
+- Garantias de serviços e exclusões ainda precisam de revisão jurídica.
+- A aplicação deve respeitar o Código de Defesa do Consumidor.
+
+Esses dados passam a ser a referência atual para futuras configurações. Permanecem pendentes a confirmação final do bairro, as taxas acima de 1 km, estoque, prazos, garantias específicas de serviços e revisão jurídica dos documentos.
