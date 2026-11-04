@@ -1,6 +1,7 @@
 export const COOKIE_NAME = "webdev_app_session";
 export const ADMIN_SESSION_COOKIE = "gtech_admin_session";
 export const ADMIN_SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+export const ADMIN_ACTION_TICKET_TTL_MS = 1000 * 60 * 30;
 export const ONE_YEAR_MS = 1000 * 60 * 60 * 24 * 365;
 export const AXIOS_TIMEOUT_MS = 30_000;
 export const UNAUTHED_ERR_MSG = 'Please login (10001)';

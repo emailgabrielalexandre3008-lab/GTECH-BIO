@@ -1,7 +1,7 @@
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 import { parse as parseCookieHeader } from "cookie";
 import type { Request, Response } from "express";
-import { ADMIN_SESSION_COOKIE, ADMIN_SESSION_TTL_MS } from "@shared/const";
+import { ADMIN_ACTION_TICKET_TTL_MS, ADMIN_SESSION_COOKIE, ADMIN_SESSION_TTL_MS } from "@shared/const";
 import * as db from "../db";
 import { ENV } from "./env";
 import { getSessionCookieOptions } from "./cookies";
@@ -66,7 +66,7 @@ export function clearAdminSessionCookie(res: Response) {
 
 export async function createAdminActionTicket(email: string) {
   const token = randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + 2 * 60 * 1000);
+  const expiresAt = new Date(Date.now() + ADMIN_ACTION_TICKET_TTL_MS);
   await db.createAdminActionTicket({ tokenHash: hashSessionToken(token), email: normalizeEmail(email), expiresAt });
   return { token, expiresAt };
 }
