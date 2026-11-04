@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Activity, ArrowLeft, BarChart3, Check, CheckCircle2, ClipboardList, ExternalLink, FileText, Image, LayoutDashboard, Link2, LogOut, Megaphone, Pencil, Plus, Quote, Settings, ShieldCheck, Smartphone, Star, Trash2, UploadCloud, Users, X } from "lucide-react";
 import { trpc } from "@/lib/trpc";
+import { clearAdminSessionToken, getAdminSessionHeaders, saveAdminSessionToken } from "@/lib/admin-session";
 
 type AdminSessionState = { checked: boolean; authenticated: boolean; email: string };
 type Tab = "dashboard" | "branding" | "editor" | "links" | "simulator" | "orders" | "clients" | "promotions" | "feedback" | "frontals-import" | "batteries-import" | "analytics" | "settings" | "security";
-type LoginResponse = { authenticated?: boolean; email?: string; error?: string };
+type LoginResponse = { authenticated?: boolean; email?: string; adminToken?: string; error?: string };
 type ContentForm = { kind: string; slug: string; title: string; subtitle: string; body: string; url: string; dataJson: string; active: boolean; sortOrder: number };
 
 const emptyFeedback = { customerName: "", rating: 5, comment: "", reviewDate: "", source: "Google", published: false };
@@ -41,7 +42,7 @@ export default function Admin() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/admin/session", { credentials: "include" }).then((response) => readJson<{ authenticated: boolean; email?: string }>(response)).then((data) => {
+    fetch("/api/admin/session", { credentials: "include", headers: getAdminSessionHeaders() }).then((response) => readJson<{ authenticated: boolean; email?: string }>(response)).then((data) => {
       if (active) setSession({ checked: true, authenticated: Boolean(data.authenticated), email: data.email ?? "" });
     }).catch(() => { if (active) setSession({ checked: true, authenticated: false, email: "" }); });
     return () => { active = false; };
@@ -66,11 +67,12 @@ export default function Admin() {
       const response = await fetch("/api/admin/login", { method: "POST", headers: { "Content-Type": "application/json" }, credentials: "include", body: JSON.stringify(loginForm) });
       const data = await readJson<LoginResponse>(response);
       if (!response.ok || !data.authenticated) { setLoginError(data.error ?? "Não foi possível entrar."); return; }
+      saveAdminSessionToken(data.adminToken);
       setSession({ checked: true, authenticated: true, email: data.email ?? loginForm.email.trim().toLowerCase() }); setLoginForm({ email: loginForm.email, password: "" });
     } catch { setLoginError("Não foi possível conectar ao painel. Tente novamente."); } finally { setLoginPending(false); }
   }
 
-  async function handleLogout() { await fetch("/api/admin/logout", { method: "POST", credentials: "include" }).catch(() => undefined); setSession({ checked: true, authenticated: false, email: "" }); }
+  async function handleLogout() { await fetch("/api/admin/logout", { method: "POST", credentials: "include", headers: getAdminSessionHeaders() }).catch(() => undefined); clearAdminSessionToken(); setSession({ checked: true, authenticated: false, email: "" }); }
   function resetFeedback() { setFeedbackEditingId(null); setFeedbackForm(emptyFeedback); }
   function resetContent() { setContentEditingId(null); setContentForm({ ...emptyContent, kind: contentKind ?? "link" }); }
   function editContent(item: NonNullable<typeof contentQuery.data>[number]) { setContentEditingId(item.id); setContentForm({ kind: item.kind, slug: item.slug, title: item.title, subtitle: item.subtitle ?? "", body: item.body ?? "", url: item.url ?? "", dataJson: item.dataJson ?? "", active: item.active === 1, sortOrder: item.sortOrder }); }
@@ -119,7 +121,7 @@ function BrandingModule() {
 
   async function uploadLogo() {
     if (!file) return logoUrl;
-    const session = await fetch("/api/admin/session", { credentials: "include" }).then((response) => response.json());
+    const session = await fetch("/api/admin/session", { credentials: "include", headers: getAdminSessionHeaders() }).then((response) => response.json());
     if (!session.authenticated || !session.actionTicket) throw new Error("Sua sessão administrativa expirou.");
     const response = await fetch("/api/admin/branding/logo", { method: "POST", credentials: "include", headers: { "Content-Type": file.type, "X-File-Name": file.name, "X-Admin-Action-Ticket": session.actionTicket }, body: await file.arrayBuffer() });
     const data = await response.json().catch(() => ({}));
@@ -157,7 +159,7 @@ function FrontalsImportModule({ category = "frontals" }: { category?: "frontals"
   const [error, setError] = useState("");
 
   async function supplierFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-    const sessionResponse = await fetch("/api/admin/session", { credentials: "include" });
+    const sessionResponse = await fetch("/api/admin/session", { credentials: "include", headers: getAdminSessionHeaders() });
     const session = await sessionResponse.json().catch(() => ({}));
     if (!session.authenticated || !session.actionTicket) throw new Error("Sua sessão administrativa expirou. Recarregue o painel e entre novamente.");
     const headers = new Headers(init.headers);

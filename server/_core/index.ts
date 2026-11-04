@@ -33,7 +33,7 @@ async function startServer() {
     try {
       const { token, expiresAt } = await createAdminLogin(email);
       setAdminSessionCookie(res, token);
-      res.json({ authenticated: true, email: email.trim().toLowerCase(), expiresAt });
+      res.json({ authenticated: true, email: email.trim().toLowerCase(), expiresAt, adminToken: token });
     } catch (error) {
       console.error("[AdminAuth] Login failed:", error instanceof Error ? error.message : "unknown error");
       res.status(500).json({ error: "Não foi possível iniciar a sessão administrativa." });

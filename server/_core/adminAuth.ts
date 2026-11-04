@@ -25,6 +25,13 @@ function hashSessionToken(token: string) {
   return createHash("sha256").update(token).digest("hex");
 }
 
+function getAdminSessionToken(req: Request) {
+  const cookieToken = parseCookieHeader(req.headers.cookie ?? "")[ADMIN_SESSION_COOKIE];
+  if (cookieToken) return cookieToken;
+  const headerToken = req.headers["x-gtech-admin-session"];
+  return typeof headerToken === "string" && headerToken ? headerToken : undefined;
+}
+
 export function verifyAdminCredentials(email: string, password: string) {
   const configuredEmail = normalizeEmail(ENV.adminEmail);
   const configuredPassword = ENV.adminPassword;
@@ -44,7 +51,7 @@ export async function createAdminLogin(email: string) {
 }
 
 export async function getAdminIdentity(req: Request): Promise<AdminIdentity | null> {
-  const token = parseCookieHeader(req.headers.cookie ?? "")[ADMIN_SESSION_COOKIE];
+  const token = getAdminSessionToken(req);
   if (!token) return null;
   const session = await db.getAdminSessionByTokenHash(hashSessionToken(token));
   if (!session) return null;
@@ -52,7 +59,7 @@ export async function getAdminIdentity(req: Request): Promise<AdminIdentity | nu
 }
 
 export async function revokeAdminLogin(req: Request) {
-  const token = parseCookieHeader(req.headers.cookie ?? "")[ADMIN_SESSION_COOKIE];
+  const token = getAdminSessionToken(req);
   if (token) await db.deleteAdminSession(hashSessionToken(token));
 }
 
