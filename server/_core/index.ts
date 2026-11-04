@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { clearAdminSessionCookie, createAdminActionTicket, createAdminLogin, getAdminIdentity, getAdminIdentityOrActionTicket, revokeAdminLogin, setAdminSessionCookie, verifyAdminCredentials } from "./adminAuth";
 import { approveSupplierImport, createSupplierImport, getSupplierImport, listPartsCatalog, listSupplierImports } from "../db";
 import { parseFrontalsWorkbook } from "../supplier/frontalsParser";
+import { parseBatteriesWorkbook } from "../supplier/batteriesParser";
 import { uploadSupplierFile } from "../supplier/storage";
 
 async function startServer() {
@@ -88,6 +89,50 @@ async function startServer() {
     const identity = await getAdminIdentityOrActionTicket(req);
     if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
     res.json({ parts: await listPartsCatalog("frontals") });
+  });
+  app.get("/api/admin/supplier/batteries/imports", async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    res.json({ imports: await listSupplierImports("batteries") });
+  });
+  app.get("/api/admin/supplier/batteries/imports/:id", async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    const item = await getSupplierImport(Number(req.params.id));
+    if (!item || item.category !== "batteries") { res.status(404).json({ error: "Importação de baterias não encontrada." }); return; }
+    res.json({ ...item, preview: JSON.parse(item.previewJson) });
+  });
+  app.post("/api/admin/supplier/batteries/import", express.raw({ type: ["application/octet-stream", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel"], limit: "25mb" }), async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    const fileName = String(req.header("x-file-name") || "").trim();
+    const contentType = String(req.header("content-type") || "application/octet-stream").split(";")[0];
+    if (!/\.(xlsx|xls)$/i.test(fileName)) { res.status(400).json({ error: "Envie um arquivo .xlsx ou .xls." }); return; }
+    const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body ?? []);
+    if (!buffer.length) { res.status(400).json({ error: "O arquivo está vazio." }); return; }
+    try {
+      const parsed = parseBatteriesWorkbook(buffer);
+      const sourceFileKey = await uploadSupplierFile(buffer, fileName, contentType);
+      const importId = await createSupplierImport({ category: "batteries", fileName, sourceFileKey, status: "preview", rowsTotal: parsed.rowsTotal, validRows: parsed.validRows, invalidRows: parsed.invalidRows, duplicateRows: parsed.duplicateRows, changedRows: 0, previewJson: JSON.stringify(parsed.rows), importedBy: identity.email });
+      res.json({ importId, fileName, status: "preview", rowsTotal: parsed.rowsTotal, validRows: parsed.validRows, invalidRows: parsed.invalidRows, duplicateRows: parsed.duplicateRows, brands: parsed.brands, models: parsed.models, sheetsRead: parsed.sheetsRead, preview: parsed.rows.slice(0, 200) });
+    } catch (error) {
+      console.error("[SupplierImport] batteries failed:", error instanceof Error ? error.message : "unknown");
+      res.status(422).json({ error: error instanceof Error ? error.message : "Não foi possível interpretar a tabela de baterias." });
+    }
+  });
+  app.post("/api/admin/supplier/batteries/imports/:id/approve", async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    try {
+      const item = await getSupplierImport(Number(req.params.id));
+      if (!item || item.category !== "batteries") { res.status(404).json({ error: "Importação de baterias não encontrada." }); return; }
+      res.json(await approveSupplierImport(item.id));
+    } catch (error) { res.status(422).json({ error: error instanceof Error ? error.message : "Não foi possível aprovar a importação de baterias." }); }
+  });
+  app.get("/api/admin/supplier/batteries/catalog", async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    res.json({ parts: await listPartsCatalog("batteries") });
   });
   registerOAuthRoutes(app);
   // tRPC API

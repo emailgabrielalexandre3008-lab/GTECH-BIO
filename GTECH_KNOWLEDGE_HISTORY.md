@@ -358,3 +358,16 @@ Foi implementada autorização adicional por ticket curto para proteger upload, 
 - Catálogo público de frontais: ativo após aprovação da `Tabelatela(3).xlsx`.
 - Google Meu Negócio/API Google: deliberadamente não implementado nesta fase.
 - Bateria e componentes: ainda não importados.
+
+
+## Atualização de 03/11/2026 — Catálogo de baterias
+
+A implementação de baterias foi iniciada conforme planejado, usando a planilha real `Tabelabaterias(4).xlsx` da Tyros Cell. O arquivo possui uma aba (`Sheet1`), seções para Samsung, Motorola, Xiaomi, LG, iPhone, Realme, Infinix e Oppo, com colunas de qualidade `CHINA`, `ORI TYROS` e, na seção de iPhone, `FOX CONN` e `ORI TYROS`.
+
+O parser dedicado identifica marca, modelo, qualidade e custo sem misturar a categoria com frontais ou componentes. A fórmula aprovada do projeto foi aplicada para o preço estimado: `Y = (X × 2) + R$ 30`. O custo da Tyros permanece privado no painel e não é enviado ao cliente.
+
+A tabela foi importada e aprovada com os seguintes números confirmados: 300 modelos, 409 opções válidas de custo, 191 combinações sem custo válido, 8 marcas e importação registrada com ID 90001. As opções sem custo continuam fora do orçamento automático.
+
+O painel administrativo agora possui a aba `Importar baterias`, com upload protegido, prévia, histórico e aprovação. O simulador público possui consulta separada para baterias e, quando o defeito escolhido é `Bateria descarregando`, mostra as qualidades disponíveis para o modelo e os preços estimados aprovados. O endpoint público testado para Samsung A01 retornou `CHINA — R$ 80` e `ORI TYROS — R$ 100`.
+
+Baterias agora estão implementadas e ativas. Ainda faltam, em fases futuras, componentes/conectores e a confirmação comercial de disponibilidade, prazo, garantia e eventuais regras específicas por bateria. Não presumir essas informações.

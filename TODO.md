@@ -54,3 +54,14 @@
 - [ ] Garantir controles equivalentes para toque, mouse e teclado, áreas de toque confortáveis, foco visível, textos legíveis sem zoom horizontal, conteúdo que não dependa de hover e suporte a `prefers-reduced-motion`.
 - [ ] Exibir card de orçamento somente após 60 segundos sem interação, uma vez por sessão, sem atrapalhar o simulador, com as mensagens e botões definidos no documento mestre.
 - [ ] Manter manifesto em `/manus-routes.json`, metadados SEO básicos, títulos/descrições significativos e estrutura compatível com publicação futura.
+
+
+## Baterias — implementação concluída
+
+- [x] Ler e interpretar `Tabelabaterias(4).xlsx` em parser dedicado, sem misturar com frontais.
+- [x] Criar importação protegida, prévia, histórico e aprovação no painel administrativo.
+- [x] Aprovar 300 modelos, 409 opções válidas e 191 combinações sem custo; manter sem preço automático as opções inválidas ou sem custo.
+- [x] Conectar o simulador ao catálogo `batteries` para o defeito “Bateria descarregando”.
+- [x] Validar Samsung A01 com CHINA por R$ 80 e ORI TYROS por R$ 100.
+- [ ] Confirmar comercialmente disponibilidade, prazo e garantia específicos de cada bateria.
+- [ ] Implementar posteriormente a tabela de componentes/conectores em categoria separada.
