@@ -5,10 +5,15 @@ function safeFileName(fileName: string) {
 }
 
 export async function uploadSupplierFile(buffer: Buffer, fileName: string, contentType: string) {
+  return uploadManagedFile(buffer, fileName, contentType, "supplier-imports/frontals");
+}
+
+export async function uploadManagedFile(buffer: Buffer, fileName: string, contentType: string, directory: string) {
   const baseUrl = process.env.MANUS_API_URL;
   const apiKey = process.env.MANUS_API_KEY;
   if (!baseUrl || !apiKey) throw new Error("Storage do projeto não está configurado.");
-  const key = `supplier-imports/frontals/${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${safeFileName(fileName)}`;
+  const cleanDirectory = directory.replace(/^\/+|\/+$/g, "").replace(/[^a-zA-Z0-9/_-]+/g, "-") || "uploads";
+  const key = `${cleanDirectory}/${Date.now()}-${crypto.randomBytes(8).toString("hex")}-${safeFileName(fileName)}`;
   const response = await fetch(`${baseUrl.replace(/\/$/, "")}/v1/storage/presign/put?path=${encodeURIComponent(key)}`, { headers: { Authorization: `Bearer ${apiKey}` } });
   const payload = await response.json().catch(() => ({})) as { url?: string; error?: string };
   if (!response.ok || !payload.url) throw new Error(payload.error || "Não foi possível preparar o armazenamento do arquivo.");

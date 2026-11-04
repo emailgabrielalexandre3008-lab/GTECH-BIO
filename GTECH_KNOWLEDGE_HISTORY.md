@@ -371,3 +371,12 @@ A tabela foi importada e aprovada com os seguintes números confirmados: 300 mod
 O painel administrativo agora possui a aba `Importar baterias`, com upload protegido, prévia, histórico e aprovação. O simulador público possui consulta separada para baterias e, quando o defeito escolhido é `Bateria descarregando`, mostra as qualidades disponíveis para o modelo e os preços estimados aprovados. O endpoint público testado para Samsung A01 retornou `CHINA — R$ 80` e `ORI TYROS — R$ 100`.
 
 Baterias agora estão implementadas e ativas. Ainda faltam, em fases futuras, componentes/conectores e a confirmação comercial de disponibilidade, prazo, garantia e eventuais regras específicas por bateria. Não presumir essas informações.
+
+
+## Atualização de 04/11/2026 — Logo sem borda e editor de identidade visual
+
+A logo padrão foi tratada a partir do asset fornecido pelo proprietário: o anel preto externo foi removido por recorte da área azul e aplicada uma máscara circular transparente. O novo asset padrão é `client/public/gtech-logo-clean.png`, usado pela página pública no lugar de `gtech-mark.png`.
+
+O painel administrativo recebeu a aba **Logo e identidade**. Ela aceita upload de JPG e PNG até 5 MB, envia a imagem ao Storage protegido e permite ajustar escala, posição horizontal e posição vertical antes de salvar. A configuração é persistida no banco como conteúdo `branding/logo`; a página pública lê somente a configuração ativa e aplica máscara circular, sem borda preta externa. O fallback continua sendo o asset limpo local quando ainda não existe uma personalização salva.
+
+O upload foi validado com resposta HTTP 200 e URL de Storage. A página pública foi capturada em viewport mobile e confirmou a logo centralizada sem o anel preto externo.

@@ -8,7 +8,7 @@ export const GTECH_CONFIG = {
   instagramUrl:
     "https://www.instagram.com/assistencia_gtechs?cplk=Y2I4NzFreWhueGg5&utm_source=qr",
   mapsUrl: "https://share.google/fgnzdYrlD7kCyIdkC",
-  logoUrl: "/gtech-mark.png",
+  logoUrl: "/gtech-logo-clean.png",
   campaignImageUrl:
     "/manus-storage/015A38C8-22AC-4870-873C-5462D0B8BEAC_6b5ad1a8.jpg",
   directAudioUrl: "",

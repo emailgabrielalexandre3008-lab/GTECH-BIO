@@ -11,7 +11,7 @@ import { clearAdminSessionCookie, createAdminActionTicket, createAdminLogin, get
 import { approveSupplierImport, createSupplierImport, getSupplierImport, listPartsCatalog, listSupplierImports } from "../db";
 import { parseFrontalsWorkbook } from "../supplier/frontalsParser";
 import { parseBatteriesWorkbook } from "../supplier/batteriesParser";
-import { uploadSupplierFile } from "../supplier/storage";
+import { uploadManagedFile, uploadSupplierFile } from "../supplier/storage";
 
 async function startServer() {
   const app = express();
@@ -44,6 +44,24 @@ async function startServer() {
     if (!identity) { res.json({ authenticated: false }); return; }
     const actionTicket = await createAdminActionTicket(identity.email);
     res.json({ authenticated: true, email: identity.email, expiresAt: identity.expiresAt, actionTicket: actionTicket.token });
+  });
+  app.post("/api/admin/branding/logo", express.raw({ type: ["image/jpeg", "image/png"], limit: "5mb" }), async (req, res) => {
+    const identity = await getAdminIdentityOrActionTicket(req);
+    if (!identity) { res.status(401).json({ error: "Não autorizado." }); return; }
+    const fileName = String(req.header("x-file-name") || "logo.png").trim();
+    const contentType = String(req.header("content-type") || "").split(";")[0].toLowerCase();
+    if (!/^image\/(jpeg|png)$/.test(contentType) || !/\.(jpe?g|png)$/i.test(fileName)) {
+      res.status(400).json({ error: "Envie uma imagem JPG ou PNG." }); return;
+    }
+    const buffer = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body ?? []);
+    if (!buffer.length) { res.status(400).json({ error: "A imagem está vazia." }); return; }
+    try {
+      const url = await uploadManagedFile(buffer, fileName, contentType, "branding");
+      res.json({ url, fileName });
+    } catch (error) {
+      console.error("[BrandingUpload] failed:", error instanceof Error ? error.message : "unknown");
+      res.status(422).json({ error: error instanceof Error ? error.message : "Não foi possível armazenar a logo." });
+    }
   });
   app.post("/api/admin/logout", async (req, res) => {
     await revokeAdminLogin(req);

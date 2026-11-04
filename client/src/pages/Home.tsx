@@ -34,7 +34,10 @@ import {
 } from "@/lib/gtech-config";
 
 function BrandMark() {
-  return <img className="bio-mark" src={GTECH_CONFIG.logoUrl} alt="Logo G-Tech" />;
+  const logoQuery = trpc.content.publicLogo.useQuery();
+  const logo = logoQuery.data;
+  const style = logo ? { "--logo-scale": logo.scale, "--logo-x": `${logo.positionX}%`, "--logo-y": `${logo.positionY}%` } as React.CSSProperties : undefined;
+  return <div className="bio-mark-frame"><img className="bio-mark" src={logo?.logoUrl ?? GTECH_CONFIG.logoUrl} alt="Logo G-Tech" style={style} /></div>;
 }
 
 function QuickLink({ icon, label, href, external = false, onClick }: { icon: React.ReactNode; label: string; href: string; external?: boolean; onClick?: () => void }) {

@@ -65,3 +65,14 @@
 - [x] Validar Samsung A01 com CHINA por R$ 80 e ORI TYROS por R$ 100.
 - [ ] Confirmar comercialmente disponibilidade, prazo e garantia específicos de cada bateria.
 - [ ] Implementar posteriormente a tabela de componentes/conectores em categoria separada.
+
+
+## Logo e identidade visual — implementação concluída
+
+- [x] Remover o anel preto externo do asset padrão por recorte preservando a arte azul da marca.
+- [x] Aplicar máscara circular sem borda preta na logo pública.
+- [x] Criar aba administrativa `Logo e identidade`.
+- [x] Aceitar upload protegido de imagens JPG e PNG até 5 MB.
+- [x] Permitir ajustar escala, posicionamento horizontal e posicionamento vertical com prévia circular.
+- [x] Persistir a configuração ativa no banco e aplicar o resultado na página pública.
+- [x] Validar TypeScript, build, upload protegido e captura mobile da Home.

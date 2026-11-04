@@ -51,6 +51,15 @@ export const appRouter = router({
       if (!item?.dataJson) return null;
       try { return JSON.parse(item.dataJson) as Record<string, string>; } catch { return null; }
     }),
+    publicLogo: publicProcedure.query(async () => {
+      const item = await getContent("branding", "logo");
+      if (!item?.active) return null;
+      let settings: { logoUrl?: string; scale?: number; positionX?: number; positionY?: number } = {};
+      try { settings = item.dataJson ? JSON.parse(item.dataJson) : {}; } catch { settings = {}; }
+      const logoUrl = settings.logoUrl || item.url;
+      if (!logoUrl) return null;
+      return { logoUrl, scale: Math.min(1.8, Math.max(0.7, Number(settings.scale) || 1)), positionX: Math.min(50, Math.max(-50, Number(settings.positionX) || 0)), positionY: Math.min(50, Math.max(-50, Number(settings.positionY) || 0)) };
+    }),
     adminList: adminProcedure.input(z.object({ kind: z.string().trim().max(32).optional() }).optional()).query(({ input }) => listContent(input?.kind)),
     create: adminProcedure.input(z.object({ kind: z.string().trim().min(2).max(32), slug: z.string().trim().min(1).max(120), title: z.string().trim().min(1).max(180), subtitle: z.string().trim().max(240).optional(), body: z.string().max(10000).optional(), url: z.string().url().max(500).optional().or(z.literal("")), dataJson: z.string().max(20000).optional(), active: z.boolean().default(true), sortOrder: z.number().int().min(0).max(9999).default(0) })).mutation(({ input }) => createContent({ ...input, active: input.active ? 1 : 0 })),
     update: adminProcedure.input(z.object({ id: z.number().int().positive(), kind: z.string().trim().min(2).max(32), slug: z.string().trim().min(1).max(120), title: z.string().trim().min(1).max(180), subtitle: z.string().trim().max(240).optional(), body: z.string().max(10000).optional(), url: z.string().url().max(500).optional().or(z.literal("")), dataJson: z.string().max(20000).optional(), active: z.boolean(), sortOrder: z.number().int().min(0).max(9999) })).mutation(({ input }) => { const { id, active, ...rest } = input; return updateContent(id, { ...rest, active: active ? 1 : 0 }); }),
