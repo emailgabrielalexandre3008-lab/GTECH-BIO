@@ -9,11 +9,19 @@
 
 ## Simulador de orçamento
 
-- [ ] Implementar fluxo com nome; marca Apple, Samsung, Motorola, Xiaomi, Asus ou outras; modelo; defeito; descrição adicional; atendimento na loja ou retirada por motoboy; intenção de urgência ou orçamento.
-- [ ] Para motoboy, solicitar localização somente após permissão, endereço, complemento e referência; distância inferior a 1 km deve ser gratuita; a partir de 1 km o valor deve ser confirmado pela equipe; não inventar taxa.
-- [ ] No orçamento, montar mensagem com nome, marca, modelo, defeito, modalidade, localização e intenção, direcionando ao WhatsApp e informando que o preço definitivo depende de avaliação técnica.
+- [x] Implementar o fluxo básico com nome; marca Apple, Samsung, Motorola, Xiaomi, Asus ou outra; modelo; defeito; descrição adicional; atendimento na loja ou retirada por motoboy; intenção de urgência ou orçamento.
+- [ ] Para motoboy, solicitar a permissão real de localização antes de usar geolocalização, coletar endereço, complemento e referência; distância inferior a 1 km deve ser gratuita; a partir de 1 km o valor deve ser confirmado pela equipe; não inventar taxa.
+- [x] Montar mensagem com nome, marca, modelo, defeito, modalidade, localização e intenção, direcionando ao WhatsApp e informando que o preço definitivo depende de avaliação técnica.
 - [ ] Na urgência, mostrar preço apenas quando cadastrado; a oferta de Incell de R$ 120 a R$ 150, garantia de 1 mês, película e mesmo dia só pode aparecer com disponibilidade e capacidade previamente confirmadas pela equipe.
-- [ ] Não inventar preços de bateria, conector, placa, software ou outros reparos; manter campos editáveis pelo painel.
+- [x] Não inventar preços de bateria, conector, placa, software ou outros reparos; quando não há preço aprovado, o fluxo orienta consultar a equipe.
+- [ ] Solicitar e persistir telefone do cliente quando necessário para acompanhamento, pois os pedidos reais atuais foram registrados sem telefone.
+
+### Regras comerciais de precificação confirmadas
+
+- [x] Aplicar às peças a fórmula `Y = (X × 2) + R$ 30`, mantendo `X` como custo privado do fornecedor e `Y` como estimativa ao cliente.
+- [x] Não aplicar desconto no Pix; a configuração persistente está em `pixDiscountPercent: 0` e exibe “Sem desconto no Pix”.
+- [x] Usar preços individuais para serviços específicos e exibir “Sob avaliação técnica” quando o valor não estiver cadastrado.
+- [ ] Tornar multiplicador, mão de obra e arredondamento configuráveis pelo painel antes de importar ou recalcular Baterias e Componentes.
 
 ## Persistência e painel administrativo
 
@@ -23,7 +31,7 @@
 - [x] Persistir registros de conteúdo administrativo para configurações, seções, links, reparos, promoções e dados estruturados, com cadastro, edição, ativação, ordenação e remoção.
 - [x] Registrar pedidos reais enviados pelo simulador, listar pedidos no painel, alterar status e derivar uma lista de clientes a partir dos pedidos recebidos.
 - [x] Registrar eventos reais de início e envio de orçamento e exibir contagens no Dashboard/Analytics; não exibir números fictícios.
-- [ ] Persistir também preços, regras detalhadas de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets com editores especializados e uploads persistidos.
+- [ ] Persistir preços, regras detalhadas de garantia, disponibilidade, Incell, motoboy, mensagens, notícias, vídeos, documentos e assets com editores especializados e uploads persistidos, além do JSON genérico já existente para configurações.
 - [ ] Permitir upload/substituição de documentos e imagens com metadados persistidos e endereços estáveis `/manus-storage/<key>`.
 - [ ] Não simular persistência, analytics, avaliações ou integrações externas; manter pendências explícitas.
 
@@ -47,7 +55,6 @@
 - [x] Conectar o simulador a frontais aprovados, com seleção de qualidade quando disponível e mensagem de consulta ao WhatsApp quando não houver custo válido.
 - [x] Renomear o CTA público para “Simular orçamento”, normalizar Apple/iPhone com a seção `IPHONE` da tabela e exibir o card “Simulação de frontais iPhone 12” com as qualidades e preços realmente disponíveis.
 - [x] Importar e aprovar `Tabelatela(3).xlsx`, que contém 623 modelos, 1.253 custos reconhecidos e 57 modelos sem custo; os frontais válidos já alimentam o orçamento público.
-- [ ] Tornar multiplicador, mão de obra e arredondamento configuráveis pelo painel antes de importar Baterias e Componentes.
 
 ## Experiência e qualidade
 

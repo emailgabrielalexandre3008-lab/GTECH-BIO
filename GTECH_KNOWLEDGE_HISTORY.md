@@ -417,7 +417,7 @@ O proprietário forneceu novos dados para orientar a configuração do sistema:
 ### Precificação e políticas
 
 - Fórmula de peças: custo × 2 + R$ 30.
-- Desconto para pagamento via Pix: 5%.
+- Pagamento via Pix: sem desconto.
 - Serviços específicos usam preços cadastrados individualmente.
 - Valores não cadastrados devem aparecer como “Sob avaliação técnica”.
 - Garantia de aparelhos usados: 30 dias, conforme política comercial registrada.
@@ -426,3 +426,7 @@ O proprietário forneceu novos dados para orientar a configuração do sistema:
 - A aplicação deve respeitar o Código de Defesa do Consumidor.
 
 Esses dados passam a ser a referência atual para futuras configurações. Permanecem pendentes a confirmação final do bairro, as taxas acima de 1 km, estoque, prazos, garantias específicas de serviços e revisão jurídica dos documentos.
+
+### Correção posterior da regra de pagamento
+
+Em 04/11/2026, o proprietário corrigiu a informação anterior: **não há desconto para pagamento via Pix**. O registro persistente de configurações foi atualizado para `pixDiscountPercent: 0` e `pixDiscountLabel: Sem desconto no Pix`. Esta decisão substitui qualquer menção anterior a desconto de 5%.
